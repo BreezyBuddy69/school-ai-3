@@ -1,0 +1,39 @@
+{
+  "name": "lgki-lab",
+  "version": "3.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 8101",
+    "build": "next build",
+    "start": "next start -p 8101",
+    "codes": "node scripts/generate-codes.mjs",
+    "scrape": "node scripts/scrape-curriculum.mjs",
+    "backup": "node scripts/backup-db.mjs",
+    "smoke-test": "node scripts/smoke-test.mjs"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "docx": "^9.5.0",
+    "katex": "^0.16.21",
+    "lucide-react": "^1.9.0",
+    "motion": "^12.38.0",
+    "next": "^16.2.4",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "react-markdown": "^10.1.0",
+    "rehype-katex": "^7.0.1",
+    "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0",
+    "tailwind-merge": "^3.5.0",
+    "zustand": "^5.0.12"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "playwright": "^1.61.1",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

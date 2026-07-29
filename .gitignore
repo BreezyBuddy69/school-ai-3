@@ -1,0 +1,15 @@
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+.env
+.env.local
+data/lgki.db
+data/lgki.db-*
+data/raw/
+data/backups/
+data/onenote-inbox/
+data/codes-print*.html
+data/codes-print*.csv
+.DS_Store

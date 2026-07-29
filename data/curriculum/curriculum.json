@@ -1,0 +1,71 @@
+{
+  "school": "Liechtensteinisches Gymnasium Vaduz",
+  "note": "Basisdaten aus lg-vaduz.li (2026-07). scripts/scrape-curriculum.mjs reichert Fach-Beschreibungen und Lektionentafeln an (data/curriculum/faecher.json, lektionentafeln.json).",
+  "sources": {
+    "faecher": "https://www.lg-vaduz.li/fach",
+    "lehrplan": "https://www.lg-vaduz.li/informationen/lehrplan",
+    "unterstufe": "https://lile.li/",
+    "profilinfo": "https://www.lg-vaduz.li/informationen/profilinformation"
+  },
+  "struktur": {
+    "unterstufe": [1, 2, 3],
+    "oberstufe": [4, 5, 6, 7],
+    "hinweis": "7 Schuljahre: Klassen 1–3 Unterstufe (LiLe-Lehrplan), Klassen 4–7 Oberstufe mit Profilwahl. Oberstufe: 35 Wochenstunden pro Jahr, 140 total."
+  },
+  "profile": [
+    {
+      "id": "lingua",
+      "name": "Lingua",
+      "kurz": "L",
+      "profilfaecher": ["Latein", "Italienisch"]
+    },
+    {
+      "id": "neue-sprachen",
+      "name": "Neue Sprachen",
+      "kurz": "N",
+      "profilfaecher": ["Latein", "Spanisch"]
+    },
+    {
+      "id": "kunst-musik-paedagogik",
+      "name": "Kunst, Musik und Pädagogik",
+      "kurz": "K",
+      "profilfaecher": ["Musik", "Bildnerisches Gestalten", "Pädagogik / Psychologie"]
+    },
+    {
+      "id": "wirtschaft-recht",
+      "name": "Wirtschaft und Recht",
+      "kurz": "W",
+      "profilfaecher": ["Integrationsfach Betriebswirtschaftslehre", "Finanzbuchhaltung", "Rechtskunde", "Volkswirtschaftslehre"],
+      "profilfaecherHinweis": "Korrigiert 2026-07-21 gegen die echte Lektionendotation auf lg-vaduz.li/fach/wirtschaft-und-recht-profilfach (vorher fälschlich 'Wirtschaft und Recht' + 'Finanz- und Rechnungswesen' — diese Namen existieren so nicht). Die 4 Fächer laufen NICHT alle über alle 4 Oberstufenjahre: Integrationsfach Betriebswirtschaftslehre Stufe 4–7 (4,4,2,2 Lektionen — deckt in Stufe 4 auch die Rechtskunde-Einführung ab), Finanzbuchhaltung nur Stufe 4 (2 Lektionen), Rechtskunde nur Stufe 5 (2 Lektionen), Volkswirtschaftslehre erst Stufe 6–7 (3,3 Lektionen). subjectsFor() in curriculum.ts kennt diese Stufen-Einschränkung nicht (gibt für jedes Oberstufenjahr alle profilfaecher zurück) — die onenote-import-Prompts pro Jahr müssen das selbst berücksichtigen, siehe Hinweis in jahr-4.md bis jahr-7.md."
+    },
+    {
+      "id": "wirtschaft-recht-sport",
+      "name": "Wirtschaft und Recht — Sportklasse",
+      "kurz": "S",
+      "profilfaecher": ["Integrationsfach Betriebswirtschaftslehre", "Finanzbuchhaltung", "Rechtskunde", "Volkswirtschaftslehre"],
+      "profilfaecherHinweis": "Siehe profilfaecherHinweis bei 'wirtschaft-recht' — gleiche Fächerstruktur, ungeprüft ob die Sportklasse abweichende Lektionenzahlen hat."
+    },
+    {
+      "id": "mathe-natur",
+      "name": "Mathematik und Naturwissenschaften",
+      "kurz": "M",
+      "profilfaecher": ["Mathematik", "Physik", "Biologie", "Chemie", "Geografie", "Informatik"]
+    }
+  ],
+  "grundlagenfaecher": [
+    "Deutsch", "Englisch", "Französisch", "Mathematik",
+    "Biologie", "Chemie", "Physik", "Geografie", "Geschichte",
+    "Informatik", "Statistik", "Wirtschaft und Recht",
+    "Bewegung und Sport", "Kunsterziehung", "Musikerziehung",
+    "Philosophie und Ethik", "Religion und Kultur"
+  ],
+  "fachSlugMap": {
+    "Mathematik": "Mathematik",
+    "Biologie": "Biologie",
+    "Deutsch": "Deutsch",
+    "Englisch": "Englisch",
+    "Französisch": "Franzoesisch",
+    "Geschichte": "Geschichte",
+    "Philosophie und Ethik": "Philosophie"
+  }
+}
