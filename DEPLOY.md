@@ -4,18 +4,17 @@ Ziel: Docker-Container hinter dem bestehenden Traefik auf
 `halovisionai.cloud`. **Port 8100** (belegt sind dort: 80, 8080, 8081,
 8082, 8091 — 8100 kollidiert mit nichts).
 
-## 1. DNS (einmalig, empfohlen)
+## 1. DNS (einmalig)
 
-A-Record `lgki.halovisionai.cloud` → VPS-IP (Hostinger-Panel).
-Subdomain ist die saubere Variante — Next.js läuft ohne basePath.
-(Alternative PathPrefix `/lgki`: Labels in docker-compose.yml tauschen und
-`NEXT_PUBLIC_BASE_PATH=/lgki` **vor dem Build** setzen.)
+A-Record `gymi.halovisionai.cloud` → VPS-IP (Hostinger-Panel). Subdomain,
+Next.js läuft ohne basePath (docker-compose.yml ist bereits darauf
+eingestellt).
 
 ## 2. Code aufs VPS
 
 ```bash
 # lokal (node_modules/.next werden nicht gebraucht — Docker baut selbst):
-scp -r school-ai-2 user@vps:/opt/lgki
+scp -r school-ai-3 user@vps:/opt/lgki
 # oder git clone, wenn das Repo online liegt
 ```
 
@@ -33,7 +32,7 @@ N8N_BASE=https://n8n.halovisionai.cloud/webhook
 N8N_SECRET=<langer zufallswert — denselben in n8n prüfen, siehe N8N-CONTRACT.md>
 SESSION_SECRET=<openssl rand -hex 32>
 ADMIN_TOKEN=<openssl rand -hex 24>
-NEXT_PUBLIC_APP_URL=https://lgki.halovisionai.cloud
+NEXT_PUBLIC_APP_URL=https://gymi.halovisionai.cloud
 ```
 
 Ohne `.env` startet der Container im Demo-Modus — gut zum Testen, nicht
@@ -45,7 +44,7 @@ zum Verkaufen.
 docker compose up -d --build
 docker compose ps                                  # healthy?
 curl -s http://127.0.0.1:8100/api/healthz          # {"ok":true,...}
-curl -s https://lgki.halovisionai.cloud/api/healthz
+curl -s https://gymi.halovisionai.cloud/api/healthz
 ```
 
 ## 5. Codes fürs Verkaufen

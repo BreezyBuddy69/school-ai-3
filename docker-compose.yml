@@ -1,15 +1,12 @@
 # LG KI 2.0 — Deployment auf dem Hostinger-VPS (halovisionai.cloud).
-# Route: https://halovisionai.cloud/lgai (PathPrefix, basePath wird im Build gesetzt).
+# Route: https://gymi.halovisionai.cloud (Subdomain, kein basePath nötig).
 # Host-Port 47821 bewusst exotisch — kollidiert mit keiner anderen Site auf dem VPS.
-# Direktzugriff ohne Traefik: http://<VPS-IP>:47821/lgai
+# Direktzugriff ohne Traefik: http://<VPS-IP>:47821
 
 services:
   lgki:
     build:
       context: .
-      args:
-        # MUSS beim Build gesetzt sein, sonst laufen Assets/API-Calls ohne /lgai ins Leere.
-        NEXT_PUBLIC_BASE_PATH: /lgai
     container_name: lgki
     restart: unless-stopped
     networks:
@@ -23,7 +20,6 @@ services:
         required: false
     environment:
       - DATA_DIR=/data
-      - NEXT_PUBLIC_BASE_PATH=/lgai
     volumes:
       # Nutzer, Tiers, Codes, Chats — dieses Volume ist heilig.
       - lgki_data:/data
@@ -35,13 +31,10 @@ services:
       start_period: 10s
     labels:
       - traefik.enable=true
-      # ── PathPrefix: halovisionai.cloud/lgai (Next serviert selbst unter /lgai — kein StripPrefix!) ──
-      - traefik.http.routers.lgki.rule=Host(`halovisionai.cloud`) && PathPrefix(`/lgai`)
+      - traefik.http.routers.lgki.rule=Host(`gymi.halovisionai.cloud`)
       - traefik.http.routers.lgki.entrypoints=websecure
       - traefik.http.routers.lgki.tls.certresolver=letsencrypt
       - traefik.http.services.lgki.loadbalancer.server.port=8100
-      # ── Alternative: Subdomain lgki.halovisionai.cloud (dann Build-Arg NEXT_PUBLIC_BASE_PATH leer!) ──
-      # - traefik.http.routers.lgki.rule=Host(`lgki.halovisionai.cloud`)
 
 networks:
   traefik-proxy:
