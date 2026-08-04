@@ -50,5 +50,6 @@ jobs:
           # dem VPS kommt dafür zu spät (Mail-Links zeigten sonst auf localhost).
           build-args: |
             NEXT_PUBLIC_APP_URL=https://lgki.halovisionai.cloud
+            N8N_SECRET=${{ secrets.N8N_SECRET }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

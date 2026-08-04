@@ -42,14 +42,22 @@ ADMIN_TOKEN=<openssl rand -hex 24>   # nur für /admin
 `N8N_BASE` ist optional (Default im Code: `https://n8n.halovisionai.cloud/webhook`)
 und `NEXT_PUBLIC_APP_URL` steckt schon im Image.
 
-**Im Hostinger-Panel gibt es keine `.env`.** Wer dort deployt, trägt die
-Variable direkt ins Compose-YAML unter `environment:` ein — `env_file` läuft
-sonst still ins Leere und der Container startet im Demo-Modus:
+**Im Hostinger-Panel gibt es keine `.env`.** Dort läuft `env_file` still ins
+Leere — deshalb steckt `N8N_SECRET` als GitHub-Actions-Secret im Image
+(Dockerfile `ARG N8N_SECRET` → `ENV`). Ein Panel-Deploy braucht damit keine
+einzige Variable: Compose aus dem Repo einfügen, fertig.
+
+Das ist ein bewusster Kompromiss: Das Image ist öffentlich, `docker inspect`
+zeigt den Wert. Er schützt zwei n8n-Knoten (`IF Secret OK (Mail)`,
+`IF Secret OK (Log)`) — die KI-Webhooks hatten nie einen Check. Bei Missbrauch
+neuen Wert in GitHub-Secrets **und** in den zwei IF-Knoten setzen.
+
+`ADMIN_TOKEN` steckt bewusst **nicht** im Image — damit liessen sich Pro-Codes
+generieren. Wer `/admin` braucht, setzt ihn im Panel:
 
 ```yaml
     environment:
       - DATA_DIR=/data
-      - N8N_SECRET=<wert>
       - ADMIN_TOKEN=<wert>
 ```
 

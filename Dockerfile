@@ -23,6 +23,17 @@ ENV NODE_ENV=production \
     HOSTNAME=0.0.0.0 \
     DATA_DIR=/data
 
+# One-Click-Deploy: das n8n-Secret kommt als Build-Arg aus den GitHub-Secrets
+# ins Image. Damit braucht das Panel-YAML keine einzige Variable mehr — der
+# Container startet direkt produktiv. Preis, bewusst bezahlt: wer das
+# öffentliche Image zieht, liest den Wert per `docker inspect`. Er schützt
+# genau zwei n8n-Knoten (Mailversand, Sheet-Log); die KI-Webhooks haben
+# ohnehin nie einen Secret-Check gehabt. Bei Missbrauch: Wert in den
+# GitHub-Secrets und in den zwei IF-Knoten neu setzen, fertig.
+# Eine Variable im Panel überschreibt das hier weiterhin (env schlägt ENV).
+ARG N8N_SECRET=
+ENV N8N_SECRET=$N8N_SECRET
+
 RUN mkdir -p /data && chown node:node /data
 USER node
 WORKDIR /app
