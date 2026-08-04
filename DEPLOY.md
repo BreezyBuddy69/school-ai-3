@@ -37,7 +37,6 @@ Pflicht für den Echtbetrieb:
 ```env
 N8N_BASE=https://n8n.halovisionai.cloud/webhook
 N8N_SECRET=<langer zufallswert — denselben in n8n prüfen, siehe N8N-CONTRACT.md>
-SESSION_SECRET=<openssl rand -hex 32>
 ADMIN_TOKEN=<openssl rand -hex 24>
 NEXT_PUBLIC_APP_URL=https://lgki.halovisionai.cloud
 ```
