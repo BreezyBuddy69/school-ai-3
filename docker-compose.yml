@@ -1,18 +1,15 @@
 # LG KI 2.0 — Deployment auf dem Hostinger-VPS (halovisionai.cloud).
-# Route: https://gymi.halovisionai.cloud (Subdomain, kein basePath nötig).
-# Host-Port 47821 bewusst exotisch — kollidiert mit keiner anderen Site auf dem VPS.
-# Direktzugriff ohne Traefik: http://<VPS-IP>:47821
+# Route: https://lgki.halovisionai.cloud (Subdomain, kein basePath nötig).
+# Image kommt aus der GitHub Action (ghcr.io) — der VPS baut NICHT selbst,
+# genau wie halo4 und hydron-one. Update = `docker compose pull && up -d`.
 
 services:
   lgki:
-    build:
-      context: .
+    image: ghcr.io/breezybuddy69/school-ai-3:master
     container_name: lgki
     restart: unless-stopped
     networks:
       - traefik-proxy
-    ports:
-      - "47821:8100"
     env_file:
       # Ohne .env startet die App im Demo-Modus (Mock-KI, Demo-Codes) —
       # `docker compose up` auf nackter Maschine bleibt vorführbar.
@@ -30,11 +27,13 @@ services:
       retries: 3
       start_period: 10s
     labels:
-      - traefik.enable=true
-      - traefik.http.routers.lgki.rule=Host(`gymi.halovisionai.cloud`)
-      - traefik.http.routers.lgki.entrypoints=websecure
-      - traefik.http.routers.lgki.tls.certresolver=letsencrypt
-      - traefik.http.services.lgki.loadbalancer.server.port=8100
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-proxy"
+      - "traefik.http.routers.lgki.rule=Host(`lgki.halovisionai.cloud`)"
+      - "traefik.http.routers.lgki.entrypoints=websecure"
+      - "traefik.http.routers.lgki.tls=true"
+      - "traefik.http.routers.lgki.tls.certresolver=letsencrypt"
+      - "traefik.http.services.lgki.loadbalancer.server.port=8100"
 
 networks:
   traefik-proxy:

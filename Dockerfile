@@ -10,6 +10,10 @@ COPY . .
 # basePath muss beim BUILD feststehen (z.B. /lgai für halovisionai.cloud/lgai).
 ARG NEXT_PUBLIC_BASE_PATH=
 ENV NEXT_PUBLIC_BASE_PATH=$NEXT_PUBLIC_BASE_PATH
+# Ebenso die App-URL: Next inlined NEXT_PUBLIC_* beim Build, env_file wirkt
+# darauf nicht mehr (Verifizierungs-Mails zeigten sonst auf localhost:8100).
+ARG NEXT_PUBLIC_APP_URL=
+ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 RUN npm run build
 
 # ── Stage 2: Runtime ──────────────────────────────────────────────────────

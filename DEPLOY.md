@@ -6,16 +6,22 @@ Ziel: Docker-Container hinter dem bestehenden Traefik auf
 
 ## 1. DNS (einmalig)
 
-A-Record `gymi.halovisionai.cloud` → VPS-IP (Hostinger-Panel). Subdomain,
-Next.js läuft ohne basePath (docker-compose.yml ist bereits darauf
-eingestellt).
+A-Record `lgki.halovisionai.cloud` → `76.13.148.102` (Hostinger-Panel).
+Subdomain, Next.js läuft ohne basePath (docker-compose.yml ist bereits
+darauf eingestellt).
 
-## 2. Code aufs VPS
+## 2. Image (GitHub Action baut, VPS zieht nur)
+
+Jeder Push auf `master` baut via `.github/workflows/docker-publish.yml`
+das Image `ghcr.io/breezybuddy69/school-ai-3:master`. **Einmalig**: Package
+auf GitHub → Packages → school-ai-3 → Package settings → Visibility
+**public** setzen, sonst scheitert `docker compose pull` mit `unauthorized`.
+
+Der VPS braucht nur `docker-compose.yml` + `.env`:
 
 ```bash
-# lokal (node_modules/.next werden nicht gebraucht — Docker baut selbst):
-scp -r school-ai-3 user@vps:/opt/lgki
-# oder git clone, wenn das Repo online liegt
+mkdir -p /opt/lgki && cd /opt/lgki
+git clone https://github.com/BreezyBuddy69/school-ai-3.git .   # oder nur die 2 Dateien kopieren
 ```
 
 ## 3. Konfigurieren
@@ -32,20 +38,28 @@ N8N_BASE=https://n8n.halovisionai.cloud/webhook
 N8N_SECRET=<langer zufallswert — denselben in n8n prüfen, siehe N8N-CONTRACT.md>
 SESSION_SECRET=<openssl rand -hex 32>
 ADMIN_TOKEN=<openssl rand -hex 24>
-NEXT_PUBLIC_APP_URL=https://gymi.halovisionai.cloud
+NEXT_PUBLIC_APP_URL=https://lgki.halovisionai.cloud
 ```
+
+`NEXT_PUBLIC_APP_URL` steht zusätzlich als Build-Arg in der Action — Next
+backt `NEXT_PUBLIC_*` beim Build ein, die `.env` allein reicht dafür nicht.
+Bei Domainwechsel also **beide** Stellen ändern.
 
 Ohne `.env` startet der Container im Demo-Modus — gut zum Testen, nicht
 zum Verkaufen.
 
-## 4. Bauen & starten
+## 4. Ziehen & starten
 
 ```bash
-docker compose up -d --build
+docker compose pull                                # grüne CI ≠ live!
+docker compose up -d
 docker compose ps                                  # healthy?
-curl -s http://127.0.0.1:8100/api/healthz          # {"ok":true,...}
-curl -s https://gymi.halovisionai.cloud/api/healthz
+docker compose exec lgki node -e "fetch('http://127.0.0.1:8100/api/healthz').then(r=>r.text()).then(console.log)"
+curl -s https://lgki.halovisionai.cloud/api/healthz
 ```
+
+Port 8100 ist bewusst **nicht** auf den Host gemappt — die VPS-Firewall
+lässt eh nur 22/80/443 durch, alles läuft über Traefik im `traefik-proxy`-Netz.
 
 ## 5. Codes fürs Verkaufen
 
@@ -62,7 +76,7 @@ docker compose cp lgki:/data/codes-print.html ./codes-print.html
 | Was | Wie |
 |---|---|
 | Logs | `docker compose logs -f` |
-| Update | `git pull && docker compose up -d --build` |
+| Update | Push auf `master` → Action abwarten → auf dem VPS `docker compose pull && docker compose up -d` |
 | Backup | `docker compose exec lgki node scripts/backup-db.mjs` dann `docker compose cp lgki:/data/backups ./backups` |
 | Healthcheck | `GET /api/healthz` (auch im Compose/Dockerfile verdrahtet) |
 
