@@ -13,9 +13,10 @@ darauf eingestellt).
 ## 2. Image (GitHub Action baut, VPS zieht nur)
 
 Jeder Push auf `master` baut via `.github/workflows/docker-publish.yml`
-das Image `ghcr.io/breezybuddy69/school-ai-3:master`. **Einmalig**: Package
-auf GitHub → Packages → school-ai-3 → Package settings → Visibility
-**public** setzen, sonst scheitert `docker compose pull` mit `unauthorized`.
+das Image `ghcr.io/breezybuddy69/school-ai-3:master`. Es ist öffentlich
+ziehbar (geprüft 2026-08-04, wie hydron-one/halo4) — falls `docker compose
+pull` je `unauthorized` sagt: GitHub → Packages → school-ai-3 → Package
+settings → Visibility **public**.
 
 Der VPS braucht nur `docker-compose.yml` + `.env`:
 
