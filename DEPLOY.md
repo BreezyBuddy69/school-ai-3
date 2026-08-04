@@ -32,21 +32,35 @@ cd /opt/lgki
 cp .env.example .env && nano .env
 ```
 
-Pflicht für den Echtbetrieb:
+Pflicht für den Echtbetrieb ist **eine** Variable:
 
 ```env
-N8N_BASE=https://n8n.halovisionai.cloud/webhook
 N8N_SECRET=<langer zufallswert — denselben in n8n prüfen, siehe N8N-CONTRACT.md>
-ADMIN_TOKEN=<openssl rand -hex 24>
-NEXT_PUBLIC_APP_URL=https://lgki.halovisionai.cloud
+ADMIN_TOKEN=<openssl rand -hex 24>   # nur für /admin
+```
+
+`N8N_BASE` ist optional (Default im Code: `https://n8n.halovisionai.cloud/webhook`)
+und `NEXT_PUBLIC_APP_URL` steckt schon im Image.
+
+**Im Hostinger-Panel gibt es keine `.env`.** Wer dort deployt, trägt die
+Variable direkt ins Compose-YAML unter `environment:` ein — `env_file` läuft
+sonst still ins Leere und der Container startet im Demo-Modus:
+
+```yaml
+    environment:
+      - DATA_DIR=/data
+      - N8N_SECRET=<wert>
+      - ADMIN_TOKEN=<wert>
 ```
 
 `NEXT_PUBLIC_APP_URL` steht zusätzlich als Build-Arg in der Action — Next
 backt `NEXT_PUBLIC_*` beim Build ein, die `.env` allein reicht dafür nicht.
 Bei Domainwechsel also **beide** Stellen ändern.
 
-Ohne `.env` startet der Container im Demo-Modus — gut zum Testen, nicht
-zum Verkaufen.
+Ohne `N8N_SECRET` startet der Container im Demo-Modus — gut zum Testen, nicht
+zum Verkaufen. Prüfen lässt sich das ohne Terminal:
+`curl -s https://lgki.halovisionai.cloud/api/healthz` zeigt `mode` und in
+`env`, welche Variablen der Container tatsächlich sieht.
 
 ## 4. Ziehen & starten
 

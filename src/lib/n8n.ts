@@ -2,13 +2,20 @@
 // dem Server — der Browser sieht weder URLs noch Secrets (im alten school-ai
 // standen die Pro-Webhooks im Client-Bundle; genau das ist hier abgestellt).
 //
-// Ohne N8N_BASE läuft alles im Demo-Modus: deterministische Mock-Antworten,
+// Ohne N8N_SECRET läuft alles im Demo-Modus: deterministische Mock-Antworten,
 // klar gekennzeichnet — `docker compose up` auf nackter Maschine bleibt vorführbar.
 // Vollständiger Vertrag inkl. Zielbild (Tool-Calls, Streaming): N8N-CONTRACT.md.
 
 import type { Tier } from './auth'
 
-const BASE = process.env.N8N_BASE // z.B. https://n8n.halovisionai.cloud/webhook
+// Die n8n-Basis ist nichts Geheimes — URL und Webhook-Pfade stehen in diesem
+// öffentlichen Repo. Geheim ist nur das Secret. Darum hat BASE einen Default
+// und der Demo-Modus hängt am Secret: "URL gesetzt, Secret fehlt" war der
+// schlimmste erreichbare Zustand (n8n antwortet 403 → niemand kann sich mehr
+// registrieren, der Fallback-Code steht aber auch nicht mehr im UI). Diesen
+// Zustand gibt es jetzt nicht mehr, und EINE Variable schaltet die Produktion
+// scharf statt zwei, die zusammenpassen müssen.
+const BASE = process.env.N8N_BASE || 'https://n8n.halovisionai.cloud/webhook'
 const SECRET = process.env.N8N_SECRET
 
 // Bestehende Workflows (Stand school-ai v1) — pro Feature ein free/pro-Paar.
@@ -29,7 +36,7 @@ const HOOKS = {
 export type HookKind = keyof typeof HOOKS
 
 export function isDemoMode(): boolean {
-  return !BASE
+  return !SECRET
 }
 
 /**
@@ -39,7 +46,7 @@ export function isDemoMode(): boolean {
  * dem Nutzer den Link direkt (Verify) bzw. loggt ihn serverseitig (Reset).
  */
 export async function sendMail(to: string, subject: string, text: string): Promise<boolean> {
-  if (!BASE) return false
+  if (isDemoMode()) return false
   try {
     const res = await fetch(`${BASE}/lgki-mail`, {
       method: 'POST',
@@ -59,7 +66,7 @@ export async function sendMail(to: string, subject: string, text: string): Promi
  * ungenutzt). Darf die Registrierung nie verzögern oder scheitern lassen.
  */
 export async function logRegistration(email: string, tier: Tier): Promise<void> {
-  if (!BASE) return
+  if (isDemoMode()) return
   try {
     await fetch(`${BASE}/lgagentdatenbank-42ae-8caf-4bf7db07019d`, {
       method: 'POST',
@@ -80,7 +87,7 @@ export async function logRegistration(email: string, tier: Tier): Promise<void> 
  * wen ging. Darf die Einlösung nie verzögern oder scheitern lassen.
  */
 export async function logRedemption(email: string, code: string, tier: Tier): Promise<void> {
-  if (!BASE) return
+  if (isDemoMode()) return
   try {
     await fetch(`${BASE}/lgagentdatenbank-42ae-8caf-4bf7db07019d`, {
       method: 'POST',
@@ -99,7 +106,7 @@ export async function logRedemption(email: string, code: string, tier: Tier): Pr
  * Antwortformat der v1-Workflows: { output: string }.
  */
 export async function callN8n(kind: HookKind, tier: Tier, payload: Record<string, unknown>): Promise<string> {
-  if (!BASE) return demoResponse(kind, payload)
+  if (isDemoMode()) return demoResponse(kind, payload)
   const route = tier === 'free' ? HOOKS[kind].free : HOOKS[kind].pro
   const res = await fetch(`${BASE}/${route}`, {
     method: 'POST',
@@ -141,7 +148,7 @@ function demoResponse(kind: HookKind, payload: Record<string, unknown>): string 
   switch (kind) {
     case 'chat':
       return [
-        `**Demo-Modus** — es ist kein n8n-Backend konfiguriert (\`N8N_BASE\` fehlt), darum antwortet hier eine Mock-KI.`,
+        `**Demo-Modus** — es ist kein n8n-Backend konfiguriert (\`N8N_SECRET\` fehlt), darum antwortet hier eine Mock-KI.`,
         ``,
         `Deine Frage zu **${topic}** würde normalerweise so beantwortet:`,
         ``,
@@ -154,7 +161,7 @@ function demoResponse(kind: HookKind, payload: Record<string, unknown>): string 
     case 'lernkarten':
       return JSON.stringify([
         { front: 'Was ist der Demo-Modus?', back: 'Mock-Antworten ohne n8n-Backend — zum Testen des kompletten Flows.' },
-        { front: 'Wie aktiviert man die echte KI?', back: 'N8N_BASE und N8N_SECRET in .env setzen, Workflows nach N8N-CONTRACT.md bauen.' },
+        { front: 'Wie aktiviert man die echte KI?', back: 'N8N_SECRET setzen, Workflows nach N8N-CONTRACT.md bauen.' },
         { front: 'Welches Karteikarten-System nutzt LG KI?', back: 'Leitner-Boxen (1–5) mit täglicher Fälligkeits-Queue.' },
       ])
     case 'quiz':
@@ -167,7 +174,7 @@ function demoResponse(kind: HookKind, payload: Record<string, unknown>): string 
         label: topic,
         children: [
           { label: 'Demo-Modus', children: [{ label: 'Mock-Antworten' }, { label: 'Kein n8n nötig' }, { label: 'Voller UI-Flow' }] },
-          { label: 'Echtbetrieb', children: [{ label: 'N8N_BASE setzen' }, { label: 'Workflows deployen' }, { label: 'Secret prüfen' }] },
+          { label: 'Echtbetrieb', children: [{ label: 'N8N_SECRET setzen' }, { label: 'Workflows deployen' }, { label: 'Secret prüfen' }] },
         ],
       })
     case 'zusammenfassung':
@@ -187,7 +194,7 @@ function demoResponse(kind: HookKind, payload: Record<string, unknown>): string 
       ].join('\n')
     case 'podcast':
       return JSON.stringify({
-        script: `Demo-Modus: Hier stünde das gesprochene Skript zu ${topic}. Ohne N8N_BASE gibt es keine echte Audio-Generierung — das kommt erst im Echtbetrieb über OpenRouter/Gemini-TTS.`,
+        script: `Demo-Modus: Hier stünde das gesprochene Skript zu ${topic}. Ohne N8N_SECRET gibt es keine echte Audio-Generierung — das kommt erst im Echtbetrieb über OpenRouter/Gemini-TTS.`,
         audioBase64: null,
       })
     case 'voiceCleanup':

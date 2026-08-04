@@ -11,12 +11,20 @@ services:
     networks:
       - traefik-proxy
     env_file:
-      # Ohne .env startet die App im Demo-Modus (Mock-KI, Demo-Codes) —
-      # `docker compose up` auf nackter Maschine bleibt vorführbar.
+      # ACHTUNG: Im Hostinger-Panel gibt es KEINE .env neben dieser Datei —
+      # `required: false` heißt, dass sie dann still fehlt und die App im
+      # Demo-Modus startet. Genau daran hing das Deployment fest. Was
+      # produktiv gelten soll, gehört unten unter `environment:`.
       - path: .env
         required: false
     environment:
       - DATA_DIR=/data
+      # EINE Variable schaltet den Produktivbetrieb scharf (siehe src/lib/n8n.ts):
+      #   - N8N_SECRET=<der Wert aus der lokalen .env>
+      # Sie steht hier bewusst NICHT — dieses Repo ist öffentlich. Der Wert
+      # wird direkt im Panel-YAML eingetragen. Optional daneben:
+      #   - ADMIN_TOKEN=<wert>   (nur für /admin)
+      # N8N_BASE braucht es nicht mehr: Default steht im Code.
     volumes:
       # Nutzer, Tiers, Codes, Chats — dieses Volume ist heilig.
       - lgki_data:/data
