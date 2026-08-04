@@ -41,3 +41,8 @@ networks:
 
 volumes:
   lgki_data:
+    # Fester Volume-Name statt "<projektname>_lgki_data". Damit findet der
+    # Container die Datenbank wieder, egal unter welchem Projektnamen der
+    # Stack neu angelegt wird — Website löschen und neu hochziehen kostet
+    # keine Nutzer, Codes oder Chats.
+    name: lgki_data
