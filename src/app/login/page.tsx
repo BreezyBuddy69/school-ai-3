@@ -60,7 +60,9 @@ function LoginForm() {
         setError(data.error ?? 'Fehler')
         return
       }
-      if (mode === 'register') {
+      // autoVerified: Ohne Mailversand schaltet der Server das Konto direkt frei
+      // und setzt die Session — dann führt der Weg an der Code-Seite vorbei.
+      if (mode === 'register' && !data.autoVerified) {
         // Kein Auto-Login mehr — erst der eingegebene Code (oder Mail-Link) zählt.
         setPendingEmail(form.email)
         setDemoVerifyLink(data.verifyLink ?? null)
