@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { currentUser } from '@/lib/auth'
 import { db, audit, hashIp } from '@/lib/db'
 import { allow, failDelay } from '@/lib/rate-limit'
-import { isDemoMode, logRedemption } from '@/lib/n8n'
+import { logRedemption } from '@/lib/n8n'
 
 // Einlösung nach dem Sable-Plattform-Muster: EINE Transaktion, deren UPDATE
 // nur greift, wenn der Code wirklich noch frei ist — Doppel-Einlösung ist
@@ -18,13 +18,25 @@ function schuljahresEnde(): string {
   return end.toISOString()
 }
 
-/** Im Demo-Modus existieren zwei feste Testcodes, damit der Flow vorführbar ist. */
+const DEMO_CODES = ['LGKI-PRO-DEMO-0001', 'LGKI-PREM-DEMO-0001']
+
+/**
+ * Zwei feste Testcodes für die lokale Entwicklung, damit der Einlöse-Flow ohne
+ * echten Pro-Code vorführbar ist. NICHT an `isDemoMode()` hängen: die Live-Instanz
+ * lief zeitweise ohne N8N_SECRET, und dann verschenkte ein öffentlich bekannter
+ * String Pro/Premium. In Produktion werden die Codes darum aktiv entfernt —
+ * auch die, die eine frühere Version schon in die DB geschrieben hat.
+ */
 function seedDemoCodes() {
-  if (!isDemoMode()) return
   const d = db()
+  if (process.env.NODE_ENV === 'production') {
+    const del = d.prepare('DELETE FROM codes WHERE code = ?')
+    for (const c of DEMO_CODES) del.run(c)
+    return
+  }
   const ins = d.prepare('INSERT OR IGNORE INTO codes (code, tier, max_redemptions) VALUES (?, ?, ?)')
-  ins.run('LGKI-PRO-DEMO-0001', 'pro', 1)
-  ins.run('LGKI-PREM-DEMO-0001', 'premium', 4)
+  ins.run(DEMO_CODES[0], 'pro', 1)
+  ins.run(DEMO_CODES[1], 'premium', 4)
 }
 
 export async function POST(req: NextRequest) {

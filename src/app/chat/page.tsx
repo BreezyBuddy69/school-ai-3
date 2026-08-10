@@ -476,15 +476,13 @@ export default function ChatPage() {
 
 // ── E-Mail-Bestätigungs-Banner ────────────────────────────────────────────────
 function VerifyBanner() {
-  const [state, setState] = useState<'idle' | 'busy' | 'sent'>('idle')
-  const [link, setLink] = useState<string | null>(null)
+  const [state, setState] = useState<'idle' | 'busy' | 'sent' | 'failed'>('idle')
 
   async function resend() {
     setState('busy')
     const res = await fetch(api('/api/auth/resend'), { method: 'POST' })
     const data = await res.json().catch(() => ({}))
-    if (data.verifyLink) setLink(data.verifyLink)
-    setState('sent')
+    setState(data.sent ? 'sent' : 'failed')
   }
 
   return (
@@ -493,10 +491,8 @@ function VerifyBanner() {
       gap: 12, flexWrap: 'wrap', fontSize: 13, boxShadow: 'var(--shadow-card)',
     }}>
       <span style={{ flex: 1, minWidth: 200 }}>
-        {state === 'sent'
-          ? (link
-            ? <>Mail-Versand ist noch nicht eingerichtet — bestätige direkt hier: <a href={link} style={{ color: 'var(--accent)', fontWeight: 600 }}>E-Mail jetzt bestätigen</a></>
-            : 'Bestätigungs-Mail ist unterwegs — schau in dein Postfach (auch Spam).')
+        {state === 'sent' ? 'Bestätigungs-Mail ist unterwegs — schau in dein Postfach (auch Spam).'
+          : state === 'failed' ? 'Der Mail-Versand klemmt gerade — bitte probier es in ein paar Minuten nochmal.'
           : '✉️ Bestätige noch deine E-Mail-Adresse, damit dein Konto (und dein Pro-Code) sicher an dich gebunden ist.'}
       </span>
       {state !== 'sent' && (

@@ -1,11 +1,11 @@
-import { sendMail, isDemoMode } from './n8n'
+import { sendMail } from './n8n'
 import { createAuthToken, createVerificationCode } from './auth'
 
 // Bestätigungs- und Reset-Mails. Verify-Link und -Code sind ein De-facto-Login
-// (beide erzeugen beim Einlösen eine Session) — sie dürfen darum NIE in einer
-// API-Response an einen unauthentifizierten Aufrufer landen. Ausnahme: reiner
-// Demo-Betrieb ohne N8N_BASE, wo es schlicht keinen Mail-Versand gibt und die
-// App den kompletten Flow trotzdem vorführbar halten muss.
+// (beide erzeugen beim Einlösen eine Session) — sie verlassen diese Datei
+// darum ausschliesslich per Mail. Keine Ausnahme, auch nicht ohne
+// konfigurierten Mailversand: ein Code, der neben dem Eingabefeld steht,
+// beweist nichts. Wer die Mail nicht bekommt, besitzt die Adresse nicht.
 //
 // Der Code ist der primäre Weg (auf derselben Seite eingebbar, funktioniert
 // unabhängig von NEXT_PUBLIC_APP_URL) — der Link ist nur eine Abkürzung für
@@ -15,7 +15,7 @@ function appUrl(): string {
   return process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:8100'
 }
 
-export async function sendVerifyMail(userId: string, email: string): Promise<{ sent: boolean; link?: string; code?: string }> {
+export async function sendVerifyMail(userId: string, email: string): Promise<boolean> {
   const token = createAuthToken(userId, 'verify')
   const link = `${appUrl()}/api/auth/verify?token=${token}`
   const code = createVerificationCode(userId)
@@ -24,8 +24,10 @@ export async function sendVerifyMail(userId: string, email: string): Promise<{ s
     'LG KI — bestätige deine E-Mail',
     `Hey!\n\nDein Bestätigungscode für LG KI:\n\n${code}\n\nGib ihn auf der Anmelde-Seite ein (gilt 30 Minuten). Alternativ direkt per Link: ${link}\n\nFalls du dich nicht registriert hast, ignorier diese Mail einfach.\n\n— LG KI · von Schülern, für Schüler`
   )
+  // Mail-Workflow fehlt oder n8n ist unten: Code/Link nur ins Server-Log (nie
+  // in die Response). Der Aufrufer entscheidet, was er dem Nutzer sagt.
   if (!sent) console.log(`[lgki] Bestätigungs-Code für ${email} (nicht versendet): ${code} — Link: ${link}`)
-  return { sent, ...(isDemoMode() ? { link, code } : {}) }
+  return sent
 }
 
 export async function sendResetMail(userId: string, email: string): Promise<boolean> {

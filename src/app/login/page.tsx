@@ -16,22 +16,16 @@ function LoginForm() {
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
   const [notice, setNotice] = useState(params.get('verify') === 'expired' ? 'Der Bestätigungslink ist abgelaufen — melde dich an, dann bekommst du beim nächsten Login-Versuch automatisch einen neuen Code.' : '')
-  const [demoVerifyLink, setDemoVerifyLink] = useState<string | null>(null)
-  const [demoCode, setDemoCode] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   function resetHints() {
     setError('')
     setNotice('')
-    setDemoVerifyLink(null)
-    setDemoCode(null)
   }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
-    setDemoVerifyLink(null)
-    setDemoCode(null)
     setLoading(true)
     try {
       if (mode === 'forgot') {
@@ -60,13 +54,9 @@ function LoginForm() {
         setError(data.error ?? 'Fehler')
         return
       }
-      // autoVerified: Ohne Mailversand schaltet der Server das Konto direkt frei
-      // und setzt die Session — dann führt der Weg an der Code-Seite vorbei.
-      if (mode === 'register' && !data.autoVerified) {
-        // Kein Auto-Login mehr — erst der eingegebene Code (oder Mail-Link) zählt.
+      if (mode === 'register') {
+        // Kein Auto-Login — erst der eingegebene Code (oder Mail-Link) zählt.
         setPendingEmail(form.email)
-        setDemoVerifyLink(data.verifyLink ?? null)
-        setDemoCode(data.verifyCode ?? null)
         setNotice(`Fast geschafft! Wir haben dir einen Bestätigungscode an ${form.email} geschickt.`)
         setMode('verify-code')
         setForm((f) => ({ ...f, password: '' }))
@@ -105,9 +95,7 @@ function LoginForm() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: pendingEmail }),
       })
-      const data = await res.json().catch(() => ({}))
-      setDemoVerifyLink(data.verifyLink ?? null)
-      setDemoCode(data.verifyCode ?? null)
+      await res.json().catch(() => ({}))
       setNotice('Neuer Code ist unterwegs — schau in dein Postfach (auch Spam).')
     } finally {
       setLoading(false)
@@ -137,12 +125,6 @@ function LoginForm() {
             <p className="t-caption" style={{ marginTop: 4 }}>{subtitles[mode]}</p>
           </div>
           {notice && <p style={{ fontSize: 13, color: 'var(--accent)', textAlign: 'center' }}>{notice}</p>}
-          {demoCode && (
-            <p style={{ fontSize: 12, textAlign: 'center' }}>
-              Demo-Modus (kein Mail-Versand konfiguriert): Code <strong>{demoCode}</strong>
-              {demoVerifyLink && <> · oder <a href={demoVerifyLink} style={{ color: 'var(--accent)', fontWeight: 600 }}>direkt bestätigen</a></>}
-            </p>
-          )}
 
           {mode === 'verify-code' ? (
             <form onSubmit={submitCode} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

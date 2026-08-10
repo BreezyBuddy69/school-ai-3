@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { registerUser, findUserByEmail, updatePendingRegistration, createSession } from '@/lib/auth'
+import { registerUser, findUserByEmail, updatePendingRegistration } from '@/lib/auth'
 import { sendVerifyMail } from '@/lib/mailer'
-import { logRegistration, isDemoMode } from '@/lib/n8n'
+import { logRegistration } from '@/lib/n8n'
 import { allow, failDelay } from '@/lib/rate-limit'
-import { db, audit, hashIp } from '@/lib/db'
+import { audit, hashIp } from '@/lib/db'
 
 // Registrierung loggt NICHT mehr automatisch ein — Login gibt es erst, wenn
 // der Bestätigungslink aus der Mail geklickt wurde (siehe /api/auth/verify).
@@ -45,23 +45,17 @@ export async function POST(req: NextRequest) {
     logRegistration(user.email, user.tier)
   }
 
-  // Ohne konfigurierten Mailversand kann die Bestätigungsmail nicht ankommen —
-  // der Code stand dann direkt auf der Seite, gleich neben dem Feld, in das er
-  // gehört. Das ist keine Prüfung, das ist eine Hürde ohne Gegenwert. Also:
-  // Konto sofort freischalten und einloggen. Sobald N8N_SECRET gesetzt ist,
-  // greift automatisch wieder der echte Bestätigungsweg per Mail.
-  if (isDemoMode()) {
-    db().prepare('UPDATE users SET verified = 1 WHERE id = ?').run(user.id)
-    await createSession(user.id)
-    audit('register_autoverified', user.email, hashIp(ip))
-    return NextResponse.json({ ok: true, autoVerified: true })
+  // Kein Ersatzweg, wenn die Mail nicht rausgeht (N8N_SECRET fehlt, n8n unten):
+  // kein Code in der Response, keine Auto-Freischaltung. Beides hiesse, dass
+  // sich jede:r mit einer fremden Adresse anmelden kann — der Punkt der
+  // Bestätigung ist ja gerade, dass nur der Besitzer der Adresse weiterkommt.
+  // Das Konto bleibt unbestätigt liegen; ein späterer Versuch übernimmt es.
+  if (!(await sendVerifyMail(user.id, user.email))) {
+    audit('register_mail_failed', user.email, hashIp(ip))
+    return NextResponse.json(
+      { error: 'Wir können dir gerade keine Bestätigungsmail schicken. Bitte probier es in ein paar Minuten nochmal.' },
+      { status: 503 }
+    )
   }
-
-  const verify = await sendVerifyMail(user.id, user.email)
-  return NextResponse.json({
-    ok: true,
-    verifyMailSent: verify.sent,
-    ...(verify.link ? { verifyLink: verify.link } : {}),
-    ...(verify.code ? { verifyCode: verify.code } : {}),
-  })
+  return NextResponse.json({ ok: true, verifyMailSent: true })
 }

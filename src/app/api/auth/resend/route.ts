@@ -11,11 +11,5 @@ export async function POST() {
   if (!allow(`resend:${user.id}`, 3, 10 * 60_000)) {
     return NextResponse.json({ error: 'Gerade erst gesendet — schau in dein Postfach (auch Spam).' }, { status: 429 })
   }
-  const verify = await sendVerifyMail(user.id, user.email)
-  return NextResponse.json({
-    ok: true,
-    sent: verify.sent,
-    ...(verify.link ? { verifyLink: verify.link } : {}),
-    ...(verify.code ? { verifyCode: verify.code } : {}),
-  })
+  return NextResponse.json({ ok: true, sent: await sendVerifyMail(user.id, user.email) })
 }

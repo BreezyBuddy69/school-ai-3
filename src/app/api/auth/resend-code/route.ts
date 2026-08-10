@@ -12,14 +12,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Zu viele Versuche — warte ein paar Minuten.' }, { status: 429 })
   }
   const { email } = await req.json().catch(() => ({}))
-  let demo: { verifyLink?: string; verifyCode?: string } = {}
   if (typeof email === 'string' && email.includes('@')) {
     const user = findUserByEmail(email)
     if (user && !user.verified && allow(`resend-code-acct:${user.id}`, 3, 10 * 60_000)) {
-      const verify = await sendVerifyMail(user.id, user.email)
-      demo = { verifyLink: verify.link, verifyCode: verify.code }
+      await sendVerifyMail(user.id, user.email)
       audit('resend_code', user.email, hashIp(ip))
     }
   }
-  return NextResponse.json({ ok: true, ...demo })
+  return NextResponse.json({ ok: true })
 }
