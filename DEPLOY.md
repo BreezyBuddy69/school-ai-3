@@ -65,8 +65,10 @@ generieren. Wer `/admin` braucht, setzt ihn im Panel:
 backt `NEXT_PUBLIC_*` beim Build ein, die `.env` allein reicht dafür nicht.
 Bei Domainwechsel also **beide** Stellen ändern.
 
-Ohne `N8N_SECRET` startet der Container im Demo-Modus — gut zum Testen, nicht
-zum Verkaufen. Prüfen lässt sich das ohne Terminal:
+Ohne `N8N_SECRET` startet der Container im Demo-Modus: die KI antwortet mit
+Mock-Texten und **es kann sich niemand registrieren** (ohne Mailversand keine
+E-Mail-Bestätigung, und einen Ersatzweg gibt es bewusst nicht — sonst könnte
+sich jede:r mit einer fremden Adresse anmelden). Prüfen ohne Terminal:
 `curl -s https://lgki.halovisionai.cloud/api/healthz` zeigt `mode` und in
 `env`, welche Variablen der Container tatsächlich sieht.
 
