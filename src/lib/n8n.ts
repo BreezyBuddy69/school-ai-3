@@ -2,21 +2,32 @@
 // dem Server — der Browser sieht weder URLs noch Secrets (im alten school-ai
 // standen die Pro-Webhooks im Client-Bundle; genau das ist hier abgestellt).
 //
-// Ohne N8N_SECRET läuft alles im Demo-Modus: deterministische Mock-Antworten,
-// klar gekennzeichnet — `docker compose up` auf nackter Maschine bleibt vorführbar.
 // Vollständiger Vertrag inkl. Zielbild (Tool-Calls, Streaming): N8N-CONTRACT.md.
 
 import type { Tier } from './auth'
 
 // Die n8n-Basis ist nichts Geheimes — URL und Webhook-Pfade stehen in diesem
-// öffentlichen Repo. Geheim ist nur das Secret. Darum hat BASE einen Default
-// und der Demo-Modus hängt am Secret: "URL gesetzt, Secret fehlt" war der
-// schlimmste erreichbare Zustand (n8n antwortet 403 → niemand kann sich mehr
-// registrieren, der Fallback-Code steht aber auch nicht mehr im UI). Diesen
-// Zustand gibt es jetzt nicht mehr, und EINE Variable schaltet die Produktion
-// scharf statt zwei, die zusammenpassen müssen.
+// öffentlichen Repo. Darum hat BASE einen Default und die Produktion braucht
+// KEINE einzige Umgebungsvariable.
+//
+// Warum kein Secret mehr: Der Deploy-Weg (Hostinger-Panel) konnte über Wochen
+// zuverlässig Images ziehen, aber keine Umgebungsvariable setzen — jede
+// Registrierung scheiterte an einem leeren `N8N_SECRET`. Die KI-Webhooks hatten
+// ohnehin nie eine Prüfung; nur der Mail-Knoten hatte eine. Statt weiter zu
+// versuchen, einen Wert in den Container zu bekommen, prüft der Mail-Knoten seit
+// 2026-08-11 nicht mehr — er baut Betreff, Text und Link selbst aus einem festen
+// Template. Aus dem Aufruf kommen nur Empfänger, Code und Token, also kann
+// niemand fremden Text oder einen Phishing-Link einschleusen.
 const BASE = process.env.N8N_BASE || 'https://n8n.halovisionai.cloud/webhook'
+
+// Der Sheet-Log-Knoten prüft weiterhin — er ist für die Anmeldung nicht nötig.
+// Ohne Wert antwortet n8n dort 403, was `logRegistration()` still schluckt.
 const SECRET = process.env.N8N_SECRET
+
+// Demo-Modus ist jetzt eine bewusste Entscheidung für die lokale Entwicklung
+// (`LGKI_DEMO=1`), keine Folge einer fehlenden Variable. Damit kann der Zustand
+// "läuft, tut aber nur so" auf der Live-Instanz nicht mehr aus Versehen entstehen.
+const DEMO = process.env.LGKI_DEMO === '1'
 
 // Bestehende Workflows (Stand school-ai v1) — pro Feature ein free/pro-Paar.
 const HOOKS = {
@@ -36,22 +47,27 @@ const HOOKS = {
 export type HookKind = keyof typeof HOOKS
 
 export function isDemoMode(): boolean {
-  return !SECRET
+  return DEMO
 }
 
 /**
  * Transaktions-Mails (E-Mail-Bestätigung, Passwort-Reset) über den Webhook
- * `lgki-mail` (Spezifikation: N8N-CONTRACT.md — Webhook-Trigger → Gmail-Node).
- * Solange der Workflow nicht existiert, liefert das false und die App zeigt
- * dem Nutzer den Link direkt (Verify) bzw. loggt ihn serverseitig (Reset).
+ * `lgki-mail`. Betreff, Text und Link baut n8n aus einem festen Template —
+ * hier gehen nur Empfänger, Art der Mail, Code und Token raus. Genau deshalb
+ * darf der Endpunkt ohne Secret auskommen: es gibt nichts einzuschleusen.
  */
-export async function sendMail(to: string, subject: string, text: string): Promise<boolean> {
+export async function sendMail(
+  to: string,
+  kind: 'verify' | 'reset',
+  token: string,
+  code?: string,
+): Promise<boolean> {
   if (isDemoMode()) return false
   try {
     const res = await fetch(`${BASE}/lgki-mail`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(SECRET ? { 'X-LGKI-Secret': SECRET } : {}) },
-      body: JSON.stringify({ to, subject, text }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to, kind, token, ...(code ? { code } : {}) }),
       signal: AbortSignal.timeout(15_000),
     })
     return res.ok

@@ -18,6 +18,22 @@ ziehbar (geprüft 2026-08-04, wie hydron-one/halo4) — falls `docker compose
 pull` je `unauthorized` sagt: GitHub → Packages → school-ai-3 → Package
 settings → Visibility **public**.
 
+> **Die App braucht keine einzige Umgebungsvariable.** Deployment = Image ziehen,
+> Container starten. Alles darunter ist optional (`ADMIN_TOKEN` für `/admin`,
+> `LGKI_DEMO=1` für lokale Mock-Antworten).
+>
+> Das war lange anders und hat wochenlang jede Registrierung blockiert: Das
+> Hostinger-Panel zog zuverlässig neue Images, brachte aber nie eine Variable in
+> den Container — `N8N_SECRET` blieb leer, der Mail-Knoten antwortete 403,
+> niemand konnte sich anmelden. Seit 2026-08-11 prüft der Mail-Knoten nicht mehr
+> und baut Betreff, Text und Link selbst aus einem festen Template. Aus dem
+> Aufruf kommen nur Empfänger, Code und Token — fremder Text oder ein
+> Phishing-Link lassen sich nicht einschleusen. Der Preis: der Endpunkt
+> `POST /webhook/lgki-mail` ist offen; missbrauchen liesse er sich nur, um
+> Code-Mails an fremde Adressen zu schicken. Wer das zurückdrehen will, hängt in
+> n8n wieder eine IF vor „Send Confirmation Mail" — dann braucht der Container
+> aber wieder eine Variable, und dieser Weg ist hier nachweislich gescheitert.
+
 Der VPS braucht nur `docker-compose.yml` + `.env`:
 
 ```bash
@@ -32,25 +48,21 @@ cd /opt/lgki
 cp .env.example .env && nano .env
 ```
 
-Pflicht für den Echtbetrieb ist **eine** Variable:
+Pflicht für den Echtbetrieb: **nichts.** Optional:
 
 ```env
-N8N_SECRET=<langer zufallswert — denselben in n8n prüfen, siehe N8N-CONTRACT.md>
 ADMIN_TOKEN=<openssl rand -hex 24>   # nur für /admin
+LGKI_DEMO=1                          # lokal: Mock-Antworten statt echter n8n-Calls
+N8N_SECRET=<wert>                    # nur noch für den Sheet-Log-Knoten
 ```
 
 `N8N_BASE` ist optional (Default im Code: `https://n8n.halovisionai.cloud/webhook`)
 und `NEXT_PUBLIC_APP_URL` steckt schon im Image.
 
-**Im Hostinger-Panel gibt es keine `.env`.** Dort läuft `env_file` still ins
-Leere — deshalb steckt `N8N_SECRET` als GitHub-Actions-Secret im Image
-(Dockerfile `ARG N8N_SECRET` → `ENV`). Ein Panel-Deploy braucht damit keine
-einzige Variable: Compose aus dem Repo einfügen, fertig.
-
-Das ist ein bewusster Kompromiss: Das Image ist öffentlich, `docker inspect`
-zeigt den Wert. Er schützt zwei n8n-Knoten (`IF Secret OK (Mail)`,
-`IF Secret OK (Log)`) — die KI-Webhooks hatten nie einen Check. Bei Missbrauch
-neuen Wert in GitHub-Secrets **und** in den zwei IF-Knoten setzen.
+**Im Hostinger-Panel gibt es keine `.env`**, und `environment:` kam dort in vier
+Anläufen ebenfalls nie an. Genau darum hängt jetzt nichts Betriebswichtiges mehr
+an einer Variable. `N8N_SECRET` schützt nur noch `IF Secret OK (Log)` — fehlt es,
+bleibt die Sheet-Zeile aus, die Anmeldung läuft weiter.
 
 `ADMIN_TOKEN` steckt bewusst **nicht** im Image — damit liessen sich Pro-Codes
 generieren. Wer `/admin` braucht, setzt ihn im Panel:
@@ -65,10 +77,9 @@ generieren. Wer `/admin` braucht, setzt ihn im Panel:
 backt `NEXT_PUBLIC_*` beim Build ein, die `.env` allein reicht dafür nicht.
 Bei Domainwechsel also **beide** Stellen ändern.
 
-Ohne `N8N_SECRET` startet der Container im Demo-Modus: die KI antwortet mit
-Mock-Texten und **es kann sich niemand registrieren** (ohne Mailversand keine
-E-Mail-Bestätigung, und einen Ersatzweg gibt es bewusst nicht — sonst könnte
-sich jede:r mit einer fremden Adresse anmelden). Prüfen ohne Terminal:
+Der Demo-Modus (Mock-Antworten, kein Mailversand) ist jetzt eine bewusste
+Entscheidung per `LGKI_DEMO=1` und kann nicht mehr aus Versehen live entstehen.
+Prüfen ohne Terminal:
 `curl -s https://lgki.halovisionai.cloud/api/healthz` zeigt `mode` und in
 `env`, welche Variablen der Container tatsächlich sieht.
 

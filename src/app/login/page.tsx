@@ -110,7 +110,7 @@ function LoginForm() {
   }
   const subtitles: Record<typeof mode, string> = {
     login: 'Weiterlernen, wo du aufgehört hast.',
-    register: 'Kostenlos — 20 Fragen pro Tag, alle Fächer.',
+    register: 'Kostenlos — 50 Fragen pro Tag, alle Fächer.',
     forgot: 'Wir schicken dir einen Link zum Zurücksetzen.',
     'verify-code': `Wir haben ${pendingEmail || 'dir'} einen 6-stelligen Code geschickt.`,
   }

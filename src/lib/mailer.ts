@@ -7,40 +7,23 @@ import { createAuthToken, createVerificationCode } from './auth'
 // konfigurierten Mailversand: ein Code, der neben dem Eingabefeld steht,
 // beweist nichts. Wer die Mail nicht bekommt, besitzt die Adresse nicht.
 //
-// Der Code ist der primäre Weg (auf derselben Seite eingebbar, funktioniert
-// unabhängig von NEXT_PUBLIC_APP_URL) — der Link ist nur eine Abkürzung für
-// den Fall, dass die öffentliche URL gerade stabil ist.
-
-function appUrl(): string {
-  return process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:8100'
-}
+// Der Code ist der primäre Weg (auf derselben Seite eingebbar) — der Link ist
+// nur eine Abkürzung. Beide Mails formuliert n8n aus einem festen Template;
+// von hier gehen nur Token und Code raus, die Domain im Link steht in n8n.
 
 export async function sendVerifyMail(userId: string, email: string): Promise<boolean> {
   const token = createAuthToken(userId, 'verify')
-  const link = `${appUrl()}/api/auth/verify?token=${token}`
   const code = createVerificationCode(userId)
-  const sent = await sendMail(
-    email,
-    'LG KI — bestätige deine E-Mail',
-    `Hey!\n\nDein Bestätigungscode für LG KI:\n\n${code}\n\nGib ihn auf der Anmelde-Seite ein (gilt 30 Minuten). Alternativ direkt per Link: ${link}\n\nFalls du dich nicht registriert hast, ignorier diese Mail einfach.\n\n— LG KI · von Schülern, für Schüler`
-  )
-  // Mail-Workflow fehlt oder n8n ist unten: Code/Link nur ins Server-Log (nie
-  // in die Response). Der Aufrufer entscheidet, was er dem Nutzer sagt.
-  if (!sent) console.log(`[lgki] Bestätigungs-Code für ${email} (nicht versendet): ${code} — Link: ${link}`)
+  const sent = await sendMail(email, 'verify', token, code)
+  // n8n unten: Code/Token nur ins Server-Log (nie in die Response).
+  // Der Aufrufer entscheidet, was er dem Nutzer sagt.
+  if (!sent) console.log(`[lgki] Bestätigungs-Code für ${email} (nicht versendet): ${code}`)
   return sent
 }
 
 export async function sendResetMail(userId: string, email: string): Promise<boolean> {
   const token = createAuthToken(userId, 'reset')
-  const link = `${appUrl()}/reset?token=${token}`
-  const sent = await sendMail(
-    email,
-    'LG KI — Passwort zurücksetzen',
-    `Hey!\n\nMit diesem Link kannst du dein LG-KI-Passwort neu setzen (gilt 1 Stunde):\n\n${link}\n\nFalls du das nicht warst, ignorier diese Mail — dein Passwort bleibt unverändert.\n\n— LG KI`
-  )
-  if (!sent) {
-    // Mail-Workflow fehlt noch: Link nur ins Server-Log (nie in die Response).
-    console.log(`[lgki] Passwort-Reset für ${email} (Mail nicht konfiguriert): ${link}`)
-  }
+  const sent = await sendMail(email, 'reset', token)
+  if (!sent) console.log(`[lgki] Passwort-Reset für ${email} (nicht versendet), Token: ${token}`)
   return sent
 }
