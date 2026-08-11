@@ -10,8 +10,8 @@ import { api } from '@/lib/utils'
 // „Code einlösen" ist die primäre CTA — so kommen Kunden wirklich an
 // (Code-Karte in der Hand, cash bezahlt). Danach erst die drei Karten.
 
-const FREE = ['20 Nachrichten pro Tag', 'Alle Fächer & Themen', 'Sprachmodus — sprich mit deinem Tutor', '1 Studio-Generierung pro Tool/Tag', 'Lernkarten-Wiederholung (Leitner)']
-const PRO = ['Unbegrenzte Nachrichten', 'Stärkere KI-Modelle', 'Word-Export für Zusammenfassungen', 'Unbegrenztes Studio', 'Podcast — gesprochene Zusammenfassung (3×/Tag)', 'Datei-Upload', 'Prüfungssimulator']
+const FREE = ['50 Nachrichten pro Tag', 'Alle Fächer & Themen', 'Sprachmodus — sprich mit deinem Tutor', 'Word-Export für Zusammenfassungen', '1 Studio-Generierung pro Tool/Tag', 'Lernkarten-Wiederholung (Leitner)']
+const PRO = ['Unbegrenzte Nachrichten', 'Stärkere KI-Modelle', 'Unbegrenztes Studio', 'Podcast — gesprochene Zusammenfassung (3×/Tag)', 'Datei-Upload', 'Prüfungssimulator']
 
 // Klassen-Deal: Pro für die ganze Klasse, Preis pro Person sinkt mit der Anzahl.
 const CLASS_TIERS = [

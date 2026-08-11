@@ -7,10 +7,14 @@ import { getUsage } from './db'
 
 export const LIMITS = {
   free: {
-    messagesPerDay: 20,
+    // Free läuft in n8n ausschliesslich auf OpenRouter-":free"-Modellen — eine
+    // Nachricht mehr kostet darum kein Geld, nur Rate-Limit. Deshalb 50 statt 20.
+    messagesPerDay: 50,
     studioPerToolPerDay: 1,
     upload: false,
-    wordExport: false,
+    // Word-Export rendert lokal im Container (docx.ts), ohne einen einzigen
+    // Token. Als Paywall war das ein reiner Ärgernis-Hebel ohne Kostengrund.
+    wordExport: true,
     voice: true, // Web Speech (STT+TTS) läuft im Browser — null Tokenkosten, darum kein Paywall-Hebel
     sync: true, // Chats liegen für alle serverseitig — Sync ist kein Paywall-Hebel, Qualität schon
     podcastPerDay: 0,

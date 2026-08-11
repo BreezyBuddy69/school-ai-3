@@ -151,7 +151,7 @@ export default function LandingPage() {
             <p className="t-lead">
               Sag LG KI, wie gut du im Thema bist und wie ausführlich es sein soll — und lad ein fertig formatiertes Word-Dokument herunter: Deckblatt, Merkkästen, Tabellen, Seitenzahlen.
             </p>
-            <span className="t-caption"><Sparkles size={13} style={{ verticalAlign: -2 }} /> Word-Export ist ein Pro-Feature</span>
+            <span className="t-caption"><Sparkles size={13} style={{ verticalAlign: -2 }} /> Word-Export ist gratis — auch ohne Pro</span>
           </div>
         </div>
       </section>
@@ -219,7 +219,7 @@ export default function LandingPage() {
       <section className="tile" style={{ textAlign: 'center' }}>
         <div style={{ maxWidth: 560, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20, alignItems: 'center' }}>
           <h2 className="t-display">Kostenlos starten. Upgraden, wenn du mehr willst.</h2>
-          <p className="t-lead">20 Nachrichten pro Tag gratis. Pro-Codes gibt es bei Jayden — Raum 406, grauer Block. Bar zahlen, Code eintippen, fertig.</p>
+          <p className="t-lead">50 Nachrichten pro Tag gratis. Pro-Codes gibt es bei Jayden — Raum 406, grauer Block. Bar zahlen, Code eintippen, fertig.</p>
           <div style={{ display: 'flex', gap: 12 }}>
             <Link href="login?register=1" className="btn btn-primary" style={{ padding: '13px 30px', fontSize: 16 }}>Konto erstellen</Link>
             <Link href="pricing" className="btn btn-ghost" style={{ padding: '13px 24px', fontSize: 16 }}>Code einlösen</Link>

@@ -113,11 +113,14 @@ export async function POST(req: NextRequest) {
         const sourceContents: { topic: string; content: string }[] = []
         for (const slug of sources.slice(0, 12)) {
           const toolId = newId('t')
-          const label = slug.split('/').pop()?.replace(/-/g, ' ') ?? slug
+          const label = slug.split('#')[0].split('/').pop()?.replace(/-/g, ' ') ?? slug
           emit({ type: 'tool', id: toolId, icon: '📖', title: 'Liest Thema', detail: `„${label}"`, status: 'running' })
           const topic = readTopic(slug)
           if (topic) {
-            sourceContents.push({ topic: slug, content: topic.content })
+            // Sprechender Titel statt Slug: bei Teilauswahl steht hier
+            // "zelle › 3. Mitose" — damit weiss das Modell, worauf der Fokus
+            // liegt, ohne dass es dafür einen eigenen Prompt-Block braucht.
+            sourceContents.push({ topic: topic.title, content: topic.content })
             emit({ type: 'tool', id: toolId, status: 'ok', out: `${topic.bytes.toLocaleString('de-CH')} Bytes gelesen` })
           } else {
             emit({ type: 'tool', id: toolId, status: 'err', out: 'Thema nicht gefunden' })
