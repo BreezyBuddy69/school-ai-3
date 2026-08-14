@@ -82,7 +82,15 @@ export async function POST(req: NextRequest) {
           const intent = detectStudioIntent(message)
           if (intent) {
             const auto = tier !== 'free' && !!user.auto_actions
-            emit({ type: 'action', tool: intent.tool, topic: intent.topic, auto, original: message })
+            // Kein Thema aus der Nachricht herauslesbar (z.B. "hallo, mach
+            // eine ZF") → die im Chat gewählten Themen sind gemeint, nicht
+            // die Nachricht selbst.
+            const topic = intent.topic || (body.sources ?? [])
+              .slice(0, 12)
+              .map((slug) => slug.split('#')[0].split('/').pop()?.replace(/-/g, ' '))
+              .filter(Boolean)
+              .join(', ')
+            emit({ type: 'action', tool: intent.tool, topic, auto, original: message })
             emit({ type: 'done', chatId: body.chatId ?? null })
             return
           }

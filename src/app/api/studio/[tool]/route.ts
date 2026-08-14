@@ -174,7 +174,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ too
     bumpUsage(user.id, `studio:${tool}`)
     touchStreak(user.id)
     return NextResponse.json({ id, name, type: tool, subject, content: stored })
-  } catch {
+  } catch (err) {
+    console.error(`studio/${tool} generation failed:`, err)
     return NextResponse.json({ error: 'Die Generierung hat nicht geklappt — probier es nochmal.' }, { status: 502 })
   }
 }

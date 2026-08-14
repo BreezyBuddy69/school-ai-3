@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Menu, PanelRight, Share2 } from 'lucide-react'
 import { useAppStore, refreshProfile } from '@/lib/store'
 import { api, subjectGlyph } from '@/lib/utils'
+import { subjectWords } from '@/lib/subjectWords'
 import { Sidebar, type ChatListItem } from '@/components/chat/Sidebar'
 import { Transcript } from '@/components/chat/Transcript'
 import { Composer } from '@/components/chat/Composer'
@@ -19,6 +20,7 @@ import { PodcastModal } from '@/components/studio/PodcastModal'
 import { SettingsSheet } from '@/components/SettingsSheet'
 import { Modal } from '@/components/ui/Modal'
 import { ParticleTitle } from '@/components/ui/ParticleTitle'
+import { Typewriter } from '@/components/ui/Typewriter'
 import { TourOverlay, type TourStep } from '@/components/ui/TourOverlay'
 type SubjectTree = Record<string, Record<string, Record<string, string>>>
 type MainView = 'home' | 'picker' | 'chat'
@@ -359,7 +361,11 @@ export default function ChatPage() {
                 {subject ? (
                   <>
                     <span style={{ fontSize: 40 }}>{subjectGlyph(subject)}</span>
-                    <h1 className="t-display">{subject}</h1>
+                    <h1 className="sr-only">{subject}</h1>
+                    <ParticleTitle lines={[subject]} height="clamp(70px, 13vw, 120px)" />
+                    <p className="t-caption anim-in" aria-hidden="true" style={{ fontSize: 14, fontWeight: 600, color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>
+                      <Typewriter words={subjectWords(subject)} />
+                    </p>
                     <p className="t-lead" style={{ maxWidth: 480 }}>
                       Stell eine Frage — ich lese zuerst deine gewählten Themen und antworte dann. Oder starte im Studio direkt Lernkarten, ein Quiz oder eine Zusammenfassung.
                     </p>
@@ -457,7 +463,7 @@ export default function ChatPage() {
         <QuizModal projectId={viewer.id} name={viewer.name} questions={viewerContent.questions} tier={profile?.tier ?? 'free'} onClose={() => setViewer(null)} />
       )}
       {viewer && viewerContent?.kind === 'tree' && (
-        <MindmapModal name={viewer.name} tree={viewerContent.tree} onClose={() => setViewer(null)} />
+        <MindmapModal key={viewer.id} name={viewer.name} tree={viewerContent.tree} onClose={() => setViewer(null)} />
       )}
       {viewer && viewerContent?.kind === 'markdown' && (
         <SummaryViewModal projectId={viewer.id} name={viewer.name} markdown={viewerContent.markdown}

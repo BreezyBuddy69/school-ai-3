@@ -1,0 +1,18 @@
+Auf diesem VPS (halovisionai.cloud) läuft Traefik bereits im Docker-Netz "traefik-proxy". Bitte eine neue Site live schalten:
+
+1) DNS: A-Record "lgki.halovisionai.cloud" auf die IP dieses VPS setzen.
+
+2) Deployen (das Image kommt fertig von ghcr.io — NICHT lokal bauen):
+mkdir -p /opt/lgki && cd /opt/lgki
+git clone https://github.com/BreezyBuddy69/school-ai-3.git . || git pull
+[ -f .env ] || cp .env.example .env
+docker compose pull && docker compose up -d
+
+3) Prüfen: "docker compose ps" muss healthy zeigen, danach
+curl -sI https://lgki.halovisionai.cloud/api/healthz  → 200.
+Wenn Traefik 404 liefert, hängt der Container nicht im Netz "traefik-proxy"
+oder die traefik.*-Labels greifen nicht — bitte prüfen und mir sagen, was du
+geändert hast.
+
+Die App läuft danach im Demo-Modus, die echte .env spiele ich selbst ein.
+Zeig mir am Ende die Ausgabe von "docker compose ps" und vom curl.

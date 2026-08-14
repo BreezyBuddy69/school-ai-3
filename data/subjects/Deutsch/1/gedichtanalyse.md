@@ -14,7 +14,7 @@
 - Anzahl Strophen und Verse
 - Reimschema: Kreuzreim (abab), Paarreim (aabb), umarmender Reim (abba), freier Vers
 
-**Metrum (Versmaß):**
+**Metrum (Versmass):**
 | Name | Muster | Beispiel |
 |------|--------|---------|
 | Jambus | ∪ — | "das HERZ" |

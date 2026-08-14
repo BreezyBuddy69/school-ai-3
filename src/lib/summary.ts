@@ -72,7 +72,7 @@ const TOOL_STRIP: Record<ToolId, RegExp> = {
   zusammenfassung: /zusammen ?fassung(en)?|zusammen ?fassen|\bfass(e|t)?\b|\bzusammen\b|\bzsmf\b|\bsummary\b|\blernskript\b/gi,
 }
 
-const COMMON_STRIP = /\b(kannst|könntest|kann|würdest|du|mir|mal|bitte|noch|jetzt|mach(en|e|st)?|erstell(en|e|st)?|gib|schreib(e|st)?|eine?[nmrs]?|word|als|davon|dazu|darüber|über|zum|thema|zu[rm]?|die|der|das|den|und|ein|kurze?|bzw|zf)\b/gi
+const COMMON_STRIP = /\b(hallo|hi|hey|servus|moin|hoi|kannst|könntest|kann|würdest|du|mir|mal|bitte|noch|jetzt|mach(en|e|st)?|erstell(en|e|st)?|gib|schreib(e|st)?|eine?[nmrs]?|word|als|davon|dazu|darüber|über|zum|thema|zu[rm]?|die|der|das|den|und|ein|kurze?|bzw|zf)\b/gi
 
 /** Erkennt, ob die Nachricht ein Studio-Werkzeug will, und welches Thema gemeint ist. */
 export function detectStudioIntent(message: string): { tool: ToolId; topic: string } | null {

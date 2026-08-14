@@ -155,6 +155,15 @@ input.field:focus, textarea.field:focus, select.field:focus {
 .anim-in { animation: msg-in 260ms var(--spring); }
 .anim-panel { animation: panel-in 380ms var(--spring); }
 
+/* Typewriter-Cursor (Fach-Wörter, Loader-Status) */
+.tw-cursor {
+  display: inline-block; width: 2px; height: 0.95em; margin-left: 2px;
+  background: currentColor; vertical-align: -0.15em;
+  animation: tw-blink 0.9s step-end infinite;
+}
+@keyframes tw-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .tw-cursor { animation: none; opacity: 0.6; } }
+
 /* ═══════════════════════════════════════════════════════════════════════════
    Chat-Transkript (Sable2-Sprache, web-nativ neu umgesetzt)
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -255,7 +264,6 @@ input.field:focus, textarea.field:focus, select.field:focus {
 .thinking-loader.slower { --gooey-a: var(--err);  --gooey-b: #ff8a3d; }
 .gooey {
   width: 100%; height: 3em; position: relative; overflow: hidden;
-  border-bottom: 4px solid var(--hairline);
   filter: url(#gooey-filter);
 }
 .gooey::before, .gooey::after {
@@ -265,15 +273,15 @@ input.field:focus, textarea.field:focus, select.field:focus {
 .gooey::before {
   width: 22em; height: 18em; background: var(--gooey-a);
   left: -2em; bottom: -18em;
-  animation: gooey-1 2s linear infinite;
+  animation: gooey-1 2.4s ease-in-out infinite;
 }
 .gooey::after {
   width: 16em; height: 12em; background: var(--gooey-b);
   left: -4em; bottom: -12em;
-  animation: gooey-2 2s linear infinite 0.75s;
+  animation: gooey-2 2.4s ease-in-out infinite 0.75s;
 }
-@keyframes gooey-1 { 0% { transform: translateX(-80px) rotate(0); } 100% { transform: translateX(min(56vw, 560px)) rotate(180deg); } }
-@keyframes gooey-2 { 0% { transform: translateX(-64px) rotate(0); } 100% { transform: translateX(min(58vw, 580px)) rotate(180deg); } }
+@keyframes gooey-1 { 0%, 100% { transform: translateX(-80px) rotate(0); } 50% { transform: translateX(min(56vw, 560px)) rotate(180deg); } }
+@keyframes gooey-2 { 0%, 100% { transform: translateX(-64px) rotate(0); } 50% { transform: translateX(min(58vw, 580px)) rotate(180deg); } }
 
 /* ── Diktier-Pille (Wispr-Flow-Stil): läuft am Composer, ersetzt das alte
    Vollbild-Hologramm und den Konversations-Voice-Modus komplett ──────────── */
@@ -311,6 +319,28 @@ input.field:focus, textarea.field:focus, select.field:focus {
   .voice-pill-bar { transition: none; animation: none !important; }
   .gooey::before, .gooey::after { animation-duration: 6s; }
 }
+
+/* ── Claude-Code-Loader: pulsierendes Logo + Wort-Typewriter ── */
+.claude-loader { gap: 10px; padding: 4px 0; }
+.cl-glyph { display: inline-flex; animation: breathe 1.8s ease-in-out infinite; }
+.cl-text { font-family: var(--font-mono); font-size: 13px; color: var(--ink-muted); }
+
+/* ── Seltene Lade-Spielereien (DVD-Bounce / Gameplay-Clip): feste kleine
+   Box statt volle Breite — "wie beim Fernseher das Logo im Rechteck" ── */
+.fun-box {
+  align-self: flex-start; width: 200px; height: 120px; border-radius: 14px;
+  overflow: hidden; position: relative; background: var(--parchment);
+  border: 1px solid var(--hairline); animation: msg-in 260ms var(--spring);
+}
+.fun-clip { width: 100%; height: 100%; object-fit: cover; display: block; }
+.dvd-track-x {
+  position: absolute; top: 0; left: 0; width: 24px; height: 24px;
+  animation: dvd-x 2.6s ease-in-out infinite alternate;
+}
+.dvd-track-y { animation: dvd-y 1.9s ease-in-out infinite alternate, dvd-hue 4s linear infinite; }
+@keyframes dvd-x { from { transform: translateX(0); } to { transform: translateX(176px); } }
+@keyframes dvd-y { from { transform: translateY(0); } to { transform: translateY(96px); } }
+@keyframes dvd-hue { from { filter: hue-rotate(0deg); } to { filter: hue-rotate(360deg); } }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Markdown-Prose (KI-Antworten, Zusammenfassungen)

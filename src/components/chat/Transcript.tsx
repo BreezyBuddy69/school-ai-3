@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Volume2, Square } from 'lucide-react'
 import { Markdown } from '@/components/Markdown'
 import { speak } from '@/components/voice/VoiceOverlay'
+import { ThinkingLoader } from './ThinkingLoader'
 import { TOOLS, type ToolId } from '@/components/studio/StudioPanel'
 import type { TranscriptItem } from './useChatStream'
 
@@ -166,11 +167,7 @@ export function Transcript({ items, empty, onActionAccept, onActionDecline }: {
           case 'thought':
             return <div key={i} className="thought-marker">Gedacht für {item.seconds}s</div>
           case 'thinking':
-            return (
-              <div key={i} className={`thinking-loader ${item.slow === 1 ? 'slow' : item.slow === 2 ? 'slower' : ''}`} role="status" aria-label="Denkt nach">
-                <div className="gooey" />
-              </div>
-            )
+            return <ThinkingLoader key={i} slow={item.slow} />
           case 'notice':
             return <div key={i} className="msg notice">{item.text}</div>
           case 'error':

@@ -8,7 +8,7 @@ Die **Dichte** $\rho$ gibt an, wie viel Masse in einem bestimmten Volumen "steck
 
 $$\rho = \frac{m}{V}$$
 
-| Größe | Formelzeichen | Einheit |
+| Grösse | Formelzeichen | Einheit |
 |---|---|---|
 | Dichte | $\rho$ | kg/m³ oder g/cm³ |
 | Masse | $m$ | kg oder g |

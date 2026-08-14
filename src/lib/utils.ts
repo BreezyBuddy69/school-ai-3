@@ -13,8 +13,8 @@ export function api(path: string): string {
 export const SUBJECT_GLYPHS: Record<string, string> = {
   Mathematik: '∑', Biologie: '❊', Geschichte: '◈', Deutsch: 'Aa',
   Englisch: 'En', Franzoesisch: 'Fr', Physik: 'φ', Chemie: '⌬',
-  Informatik: '{ }', Philosophie: '⚖', Statistik: '∿', Autotheorie: '⊕',
-  Geografie: '⛰', 'Wirtschaft und Recht': '§', 'Bewegung und Sport': '⚑',
+  Informatik: '{ }', Philosophie: '⚖', Statistik: '∿',
+  Geografie: '⛰', 'Wirtschaft und Recht': '§',
   Kunsterziehung: '❖', Musikerziehung: '♪', 'Religion und Kultur': '☯',
 }
 

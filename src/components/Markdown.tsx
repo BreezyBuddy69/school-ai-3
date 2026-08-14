@@ -7,6 +7,15 @@ import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import { ChartBlock } from './ChartBlock'
 
+// Deutsche Mathe-Notation schreibt Koordinaten als $S(d|e)$ — das rohe „|"
+// sieht GFM-Tabellen aber als Zellentrenner, bevor Inline-Math überhaupt
+// geparst wird (Tabellenzeilen werden vor Inline-Content zerlegt). Ergebnis:
+// zerschossene Zellen wie „$S(d" / „e)$". Fix: „|" innerhalb von $...$/$$...$$
+// vor dem Parsen durch \vert ersetzen (visuell identisch, kein Trenner mehr).
+function escapePipesInMath(md: string): string {
+  return md.replace(/\$\$[\s\S]*?\$\$|\$[^\n$]*?\$/g, (span) => span.replace(/\|/g, '\\vert '))
+}
+
 /** KI-Antworten: GFM + LaTeX (KaTeX) + ```chart-Blöcke als SVG-Diagramm. */
 export function Markdown({ children }: { children: string }) {
   return (
@@ -26,7 +35,7 @@ export function Markdown({ children }: { children: string }) {
           },
         }}
       >
-        {children}
+        {escapePipesInMath(children)}
       </ReactMarkdown>
     </div>
   )

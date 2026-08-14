@@ -12,7 +12,7 @@ Eine eindeutige, endliche Abfolge von Schritten, die ein Problem löst. Eigensch
 - **Pseudocode**: sprachnahe Notation ohne konkrete Syntax
 - **Flussdiagramm**: grafisch mit Symbolen (Raute = Entscheidung, Rechteck = Verarbeitung)
 
-## Beispiel: größte Zahl finden
+## Beispiel: grösste Zahl finden
 ```
 max = liste[0]
 für jede zahl in liste:

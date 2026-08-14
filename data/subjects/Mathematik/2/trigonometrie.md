@@ -13,7 +13,7 @@
 
 | Funktion | Formel | Merkhilfe |
 |----------|--------|-----------|
-| sin(α) | GK / Hyp | **S**einer **G**roßen **H**offnung |
+| sin(α) | GK / Hyp | **S**einer **G**rossen **H**offnung |
 | cos(α) | AK / Hyp | **C**alvin **A**uf **H**äusern |
 | tan(α) | GK / AK | **T**an = **G**K/**A**K |
 
