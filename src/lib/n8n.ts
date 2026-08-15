@@ -133,7 +133,11 @@ export async function callN8n(kind: HookKind, tier: Tier, payload: Record<string
     body: JSON.stringify({ ...payload, tier }),
     // Podcast = Skript-Agent + TTS-Synthese hintereinander, das dauert real
     // 2-2.5 Minuten (live gemessen) — braucht mehr Luft als die Text-Tools.
-    signal: AbortSignal.timeout(kind === 'podcast' ? 240_000 : 120_000),
+    // Quiz/Mindmap mit vielen Fragen/Ästen können bei DeepSeek ebenfalls über
+    // 120s laufen (live gemessen: 161.8s für 11 Quizfragen) — der Client brach
+    // dann vor n8n ab, obwohl die Antwort kurz danach fertig war ("Generierung
+    // hat nicht geklappt" trotz gültigem Ergebnis in den n8n-Executions).
+    signal: AbortSignal.timeout(kind === 'podcast' ? 240_000 : 180_000),
   })
   if (!res.ok) throw new Error(`n8n ${kind} antwortete ${res.status}`)
   const raw = await res.text()

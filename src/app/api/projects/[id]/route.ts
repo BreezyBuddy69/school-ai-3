@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { unlinkSync } from 'node:fs'
 import path from 'node:path'
 import { currentUser } from '@/lib/auth'
-import { db, DATA_DIR } from '@/lib/db'
+import { db, newId, DATA_DIR } from '@/lib/db'
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -14,6 +14,20 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
   if (typeof body.pinned === 'boolean') {
     db().prepare('UPDATE projects SET pinned = ? WHERE id = ? AND user_id = ?').run(body.pinned ? 1 : 0, id, user.id)
+  }
+  // Manuelles Einsortieren: entweder in einen bestehenden Ordner (folderId,
+  // null = rausnehmen) oder in einen neu angelegten (newFolderName).
+  if (typeof body.newFolderName === 'string' && body.newFolderName.trim()) {
+    const project = db().prepare('SELECT subject FROM projects WHERE id = ? AND user_id = ?').get(id, user.id) as { subject: string } | undefined
+    if (project) {
+      const folderId = newId('f')
+      db().prepare('INSERT INTO project_folders (id, user_id, subject, name, topic_key) VALUES (?, ?, ?, ?, ?)')
+        .run(folderId, user.id, project.subject, body.newFolderName.trim().slice(0, 80), `manual:${folderId}`)
+      db().prepare('UPDATE projects SET folder_id = ? WHERE id = ? AND user_id = ?').run(folderId, id, user.id)
+    }
+  } else if ('folderId' in body) {
+    const folderId = typeof body.folderId === 'string' ? body.folderId : null
+    db().prepare('UPDATE projects SET folder_id = ? WHERE id = ? AND user_id = ?').run(folderId, id, user.id)
   }
   return NextResponse.json({ ok: true })
 }

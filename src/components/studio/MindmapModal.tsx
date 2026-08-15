@@ -23,7 +23,12 @@ const BRANCH_HUES = [211, 145, 45, 330, 262, 25, 190, 160]
 
 const NODE_W = 168
 const LEVEL_GAP = 88
-const ROW_H = 52
+// Boxen haben eine minHeight (BOX_MIN_H), wachsen bei langen Labels aber bis
+// zu 3 Textzeilen (WebkitLineClamp) nach unten. ROW_H reservierte bisher nur
+// 52px pro Zeilenslot — ein 3-zeiliges Label sprengt das (~67px) und
+// überlappt den Nachbarn. 84px passt auch das größte Label (Wurzel, 3
+// Zeilen à 15px) sicher hinein.
+const ROW_H = 84
 const BOX_MIN_H = 40
 const PAD = 28
 

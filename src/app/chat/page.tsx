@@ -273,6 +273,28 @@ export default function ChatPage() {
     if (subject) refreshProjects(subject)
   }
 
+  async function renameProject(p: Project, name: string) {
+    await fetch(api(`/api/projects/${p.id}`), {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }),
+    })
+    if (subject) refreshProjects(subject)
+  }
+
+  async function moveProject(p: Project, folderId: string | null, folderName?: string) {
+    const body = folderId === null && folderName ? { newFolderName: folderName } : { folderId }
+    await fetch(api(`/api/projects/${p.id}`), {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    })
+    if (subject) refreshProjects(subject)
+  }
+
+  async function renameFolder(folderId: string, name: string) {
+    await fetch(api(`/api/folders/${folderId}`), {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }),
+    })
+    if (subject) refreshProjects(subject)
+  }
+
   // ── Viewer-Inhalte parsen (diskriminierte Union für sauberes Narrowing) ───
   type ViewerContent =
     | { kind: 'cards'; cards: { front: string; back: string }[] }
@@ -447,11 +469,24 @@ export default function ChatPage() {
         {subject ? (
           <StudioPanel
             projects={projects} dueCards={dueCards.length} tier={profile?.tier ?? 'free'}
-            onLaunch={(t) => { setToolPrompt(t); setMobileStudio(false) }}
+            onLaunch={(t) => {
+              // Zusammenfassung braucht kein Getippe, wenn schon Themen
+              // gewählt sind — das Feld ist damit vorbefüllt, aber weiter
+              // editierbar (das Modal öffnet direkt startbereit).
+              if (t === 'zusammenfassung' && !summaryTopic) {
+                const labels = topics.filter((x) => activeSources.includes(x.slug)).map((x) => x.label)
+                setSummaryTopic(labels.length ? labels.join(' & ') : subject ?? '')
+              }
+              setToolPrompt(t)
+              setMobileStudio(false)
+            }}
             onOpenProject={(p) => { setViewer(p); setMobileStudio(false) }}
             onReview={() => setReviewOpen(true)}
             onTogglePin={togglePin}
             onDeleteProject={deleteProject}
+            onRenameProject={renameProject}
+            onMoveProject={moveProject}
+            onRenameFolder={renameFolder}
             onUpgrade={() => router.push('/pricing')}
           />
         ) : <div data-tour="studio-panel" style={{ width: 316 }} className="desktop-only" />}

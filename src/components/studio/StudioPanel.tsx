@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { ChevronDown, FileText, GitBranch, Headphones, HelpCircle, Layers, Pin, Trash2 } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { ChevronDown, FileText, FolderInput, GitBranch, Headphones, HelpCircle, Layers, MoreHorizontal, Pencil, Pin, Trash2 } from 'lucide-react'
 import { timeAgo } from '@/lib/utils'
 
 export interface Project {
@@ -32,6 +32,7 @@ const TYPE_ICON: Record<string, typeof Layers> = {
 
 export function StudioPanel({
   projects, dueCards, tier, onLaunch, onOpenProject, onReview, onTogglePin, onDeleteProject, onUpgrade,
+  onRenameProject, onMoveProject, onRenameFolder,
 }: {
   projects: Project[]
   dueCards: number
@@ -42,9 +43,31 @@ export function StudioPanel({
   onTogglePin: (p: Project) => void
   onDeleteProject: (p: Project) => void
   onUpgrade: () => void
+  onRenameProject: (p: Project, name: string) => void
+  onMoveProject: (p: Project, folderId: string | null, folderName?: string) => void
+  onRenameFolder: (folderId: string, name: string) => void
 }) {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+  // Löschen braucht zwei Klicks auf denselben Button — ein Doppelklick aus
+  // Versehen (z.B. schnelles Antippen) darf trotzdem nicht sofort löschen,
+  // darum zählt der zweite Klick erst nach einer kurzen Sperrfrist. Ausserdem
+  // läuft die Bestätigung nach ein paar Sekunden von selbst ab (auf Touch
+  // gibt es kein onMouseLeave, das sie sonst zurücksetzen würde).
+  const armedAt = useRef(0)
+  const armTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+  const [menuFor, setMenuFor] = useState<string | null>(null)
+
+  function arm(id: string) {
+    armedAt.current = Date.now()
+    setConfirmDelete(id)
+    if (armTimeout.current) clearTimeout(armTimeout.current)
+    armTimeout.current = setTimeout(() => setConfirmDelete(null), 3000)
+  }
+  function disarm() {
+    setConfirmDelete(null)
+    if (armTimeout.current) clearTimeout(armTimeout.current)
+  }
 
   const groups: { key: string; name: string | null; items: Project[] }[] = []
   for (const p of projects) {
@@ -53,6 +76,7 @@ export function StudioPanel({
     if (!g) { g = { key, name: p.folder_id ? (p.folder_name ?? 'Ordner') : null, items: [] }; groups.push(g) }
     g.items.push(p)
   }
+  const folderOptions = groups.filter((g) => g.name).map((g) => ({ id: g.key, name: g.name! }))
 
   function ProjectRow({ p }: { p: Project }) {
     const Icon = TYPE_ICON[p.type] ?? FileText
@@ -67,11 +91,12 @@ export function StudioPanel({
         </div>
       )
     }
+    const menuOpen = menuFor === p.id
     return (
       <div
-        style={{ display: 'flex', alignItems: 'center', gap: 4, borderRadius: 11, transition: 'background 120ms ease' }}
+        style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 4, borderRadius: 11, transition: 'background 120ms ease' }}
         onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--parchment)')}
-        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; if (confirmDelete === p.id) setConfirmDelete(null) }}
+        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; if (confirmDelete === p.id) disarm() }}
       >
         <button
           onClick={() => onOpenProject(p)}
@@ -92,10 +117,23 @@ export function StudioPanel({
           <Pin size={12} fill={p.pinned ? 'currentColor' : 'none'} />
         </button>
         <button
+          onClick={(e) => { e.stopPropagation(); setMenuFor(menuOpen ? null : p.id) }}
+          className="iconbtn"
+          style={{ width: 26, height: 26, color: menuOpen ? 'var(--accent)' : 'var(--ink-faint)' }}
+          title="Umbenennen / verschieben"
+        >
+          <MoreHorizontal size={13} />
+        </button>
+        <button
           onClick={(e) => {
             e.stopPropagation()
-            if (confirmDelete === p.id) { onDeleteProject(p); setConfirmDelete(null) }
-            else setConfirmDelete(p.id)
+            if (confirmDelete === p.id) {
+              // Sperrfrist gegen versehentlichen Doppelklick — der zweite
+              // Klick zählt erst, wenn der erste wirklich "gesehen" wurde.
+              if (Date.now() - armedAt.current < 350) return
+              onDeleteProject(p)
+              disarm()
+            } else arm(p.id)
           }}
           className="iconbtn"
           style={{
@@ -107,6 +145,51 @@ export function StudioPanel({
         >
           <Trash2 size={12} />
         </button>
+
+        {menuOpen && (
+          <div
+            className="glass-strong"
+            style={{
+              position: 'absolute', top: '100%', right: 4, marginTop: 4, zIndex: 20,
+              borderRadius: 12, boxShadow: 'var(--shadow-card)', minWidth: 180, padding: 5,
+              display: 'flex', flexDirection: 'column', gap: 1,
+            }}
+            onMouseLeave={() => setMenuFor(null)}
+          >
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                const name = window.prompt('Neuer Name', p.name)
+                if (name && name.trim()) onRenameProject(p, name.trim())
+                setMenuFor(null)
+              }}
+              className="menuitem"
+            >
+              <Pencil size={12} /> Umbenennen
+            </button>
+            {p.folder_id && (
+              <button onClick={(e) => { e.stopPropagation(); onMoveProject(p, null); setMenuFor(null) }} className="menuitem">
+                <FolderInput size={12} /> Aus Ordner nehmen
+              </button>
+            )}
+            {folderOptions.filter((f) => f.id !== p.folder_id).map((f) => (
+              <button key={f.id} onClick={(e) => { e.stopPropagation(); onMoveProject(p, f.id, f.name); setMenuFor(null) }} className="menuitem">
+                <FolderInput size={12} /> In „{f.name}"
+              </button>
+            ))}
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                const name = window.prompt('Name des neuen Ordners')
+                if (name && name.trim()) onMoveProject(p, null, name.trim())
+                setMenuFor(null)
+              }}
+              className="menuitem"
+            >
+              <FolderInput size={12} /> Neuer Ordner…
+            </button>
+          </div>
+        )}
       </div>
     )
   }
@@ -176,21 +259,34 @@ export function StudioPanel({
           return (
             <div key={g.key}>
               {g.name ? (
-                <button
-                  onClick={() => setCollapsed((prev) => {
-                    const next = new Set(prev)
-                    if (next.has(g.key)) next.delete(g.key); else next.add(g.key)
-                    return next
-                  })}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 6, width: '100%', padding: '2px 4px 8px',
-                    border: 'none', background: 'transparent', cursor: 'pointer', font: 'inherit', textAlign: 'left',
-                  }}
-                >
-                  <ChevronDown size={11} style={{ color: 'var(--ink-faint)', transform: isCollapsed ? 'rotate(-90deg)' : 'none', transition: 'transform 120ms ease' }} />
-                  <span className="t-micro" style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.name}</span>
-                  <span className="t-micro" style={{ opacity: 0.6 }}>{g.items.length}</span>
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <button
+                    onClick={() => setCollapsed((prev) => {
+                      const next = new Set(prev)
+                      if (next.has(g.key)) next.delete(g.key); else next.add(g.key)
+                      return next
+                    })}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0, padding: '2px 4px 8px',
+                      border: 'none', background: 'transparent', cursor: 'pointer', font: 'inherit', textAlign: 'left',
+                    }}
+                  >
+                    <ChevronDown size={11} style={{ color: 'var(--ink-faint)', transform: isCollapsed ? 'rotate(-90deg)' : 'none', transition: 'transform 120ms ease' }} />
+                    <span className="t-micro" style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.name}</span>
+                    <span className="t-micro" style={{ opacity: 0.6 }}>{g.items.length}</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      const name = window.prompt('Ordner umbenennen', g.name ?? '')
+                      if (name && name.trim()) onRenameFolder(g.key, name.trim())
+                    }}
+                    className="iconbtn"
+                    style={{ width: 20, height: 20, marginBottom: 6, color: 'var(--ink-faint)' }}
+                    title="Ordner umbenennen"
+                  >
+                    <Pencil size={10} />
+                  </button>
+                </div>
               ) : (
                 <span className="t-micro" style={{ display: 'block', padding: '2px 4px 8px' }}>Gespeichert</span>
               )}
