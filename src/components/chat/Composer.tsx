@@ -74,17 +74,7 @@ export function Composer({
           boxShadow: 'var(--shadow-float)',
         }}
       >
-        <div
-          aria-hidden
-          style={{
-            width: 24, height: 24, borderRadius: '50%', flexShrink: 0, marginBottom: 6,
-            background: 'conic-gradient(from 0deg, #c96442, #d4a27f, #d97757, #c96442)',
-            animation: busy ? 'orb-spin 1.1s linear infinite' : 'orb-breathe 4s ease-in-out infinite',
-          }}
-        />
         <style>{`
-          @keyframes orb-breathe { 0%,100% { transform: scale(1); opacity: .9; } 50% { transform: scale(1.08); opacity: 1; } }
-          @keyframes orb-spin { to { transform: rotate(360deg); } }
           .composer-ta { scrollbar-width: none; }
           .composer-ta::-webkit-scrollbar { display: none; }
         `}</style>

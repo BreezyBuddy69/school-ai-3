@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Check, ChevronDown, ChevronRight, Search } from 'lucide-react'
 import { api } from '@/lib/utils'
+import { SubjectIntro } from './SubjectIntro'
 
 // Kontext-Kontrolle: welche Themen die KI in diesem Chat lesen darf.
 // "Ganzes Fach" / pro Jahr als Ein-Tap-Scopes, Suche, dann Feinauswahl.
@@ -141,7 +142,7 @@ export function TopicPicker({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 620, width: '100%', margin: '0 auto' }}>
       <div>
-        <h1 className="t-display">{subject}</h1>
+        <SubjectIntro subject={subject} height="clamp(56px, 9vw, 84px)" />
         <p className="t-caption" style={{ marginTop: 6 }}>
           Wähl die Themen, die die KI in diesem Chat kennen soll — sie liest sie sichtbar, bevor sie antwortet.
           Tippe auf den Pfeil, um nur einzelne Abschnitte eines Themas zu nehmen.

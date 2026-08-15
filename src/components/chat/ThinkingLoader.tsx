@@ -9,7 +9,15 @@ const THINK_WORDS = ['Denkt nach', 'Grübelt', 'Kombiniert Fakten', 'Prüft Quel
 
 // Stumme 5s-Ausschnitte aus der Mitte von Subway-Surfers-/GTA-Gameplay —
 // seltenes Easter Egg statt Dauerzustand (siehe public/fun-loader/*.mp4).
-const CLIPS = ['subway16-1.mp4', 'subway16-2.mp4', 'subway16-3.mp4', 'subway9-1.mp4', 'subway9-2.mp4', 'gta-1.mp4', 'gta-2.mp4', 'gta-3.mp4']
+const CLIPS = [
+  'subway16-1.mp4', 'subway16-2.mp4', 'subway16-3.mp4', 'subway16-4.mp4', 'subway16-5.mp4', 'subway16-6.mp4',
+  'subway9-1.mp4', 'subway9-2.mp4', 'subway9-3.mp4', 'subway9-4.mp4',
+  'gta-1.mp4', 'gta-2.mp4', 'gta-3.mp4', 'gta-4.mp4', 'gta-5.mp4', 'gta-6.mp4', 'gta-7.mp4', 'gta-8.mp4',
+]
+
+// Wie lang der Cross-Fade beim Zurückwechseln auf Gooey dauert — muss zur
+// CSS-Transition von .fun-box.fading passen (siehe globals.css).
+const FADE_MS = 400
 
 type Variant = 'gooey' | 'typewriter' | 'dvd' | 'clip'
 
@@ -28,17 +36,27 @@ function pickVariant(): Variant {
 export function ThinkingLoader({ slow }: { slow?: 0 | 1 | 2 }) {
   const [variant] = useState(pickVariant)
   const [clip] = useState(() => CLIPS[Math.floor(Math.random() * CLIPS.length)])
+  const [fading, setFading] = useState(false)
   const [fallback, setFallback] = useState(false)
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
+
+  // Erst ausblenden, dann erst zurück auf Gooey wechseln — kein harter Schnitt.
+  function fadeToFallback() {
+    setFading(true)
+    timer.current = setTimeout(() => setFallback(true), FADE_MS)
+  }
 
   // DVD-Bounce hat kein natürliches Ende wie ein Video — nach 5s zurück zum
   // normalen Gooey, falls die Antwort noch länger braucht ("sollte s wieder
   // weg und normal ladeanimation").
   useEffect(() => {
     if (variant !== 'dvd') return
-    timer.current = setTimeout(() => setFallback(true), 5000)
-    return () => clearTimeout(timer.current)
+    const t = setTimeout(fadeToFallback, 5000)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [variant])
+
+  useEffect(() => () => clearTimeout(timer.current), [])
 
   const active = fallback ? 'gooey' : variant
 
@@ -53,7 +71,7 @@ export function ThinkingLoader({ slow }: { slow?: 0 | 1 | 2 }) {
 
   if (active === 'dvd') {
     return (
-      <div className="fun-box" role="status" aria-label="Denkt nach">
+      <div className={`fun-box${fading ? ' fading' : ''}`} role="status" aria-label="Denkt nach">
         <div className="dvd-track-x">
           <div className="dvd-track-y"><Logo size={24} /></div>
         </div>
@@ -63,14 +81,17 @@ export function ThinkingLoader({ slow }: { slow?: 0 | 1 | 2 }) {
 
   if (active === 'clip') {
     return (
-      <div className="fun-box" role="status" aria-label="Denkt nach">
+      <div className={`fun-box${fading ? ' fading' : ''}`} role="status" aria-label="Denkt nach — Video lädt im Hintergrund weiter">
         <video
           className="fun-clip"
           src={api(`/fun-loader/${clip}`)}
           autoPlay muted playsInline
-          onEnded={() => setFallback(true)}
-          onError={() => setFallback(true)}
+          onEnded={fadeToFallback}
+          onError={fadeToFallback}
         />
+        <span className="fun-loading-badge" aria-hidden="true">
+          <span className="fun-loading-dot" /><span className="fun-loading-dot" /><span className="fun-loading-dot" />
+        </span>
       </div>
     )
   }

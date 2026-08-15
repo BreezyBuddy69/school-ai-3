@@ -29,40 +29,45 @@ const PAD = 28
 
 interface Laid {
   node: MindmapNode
+  path: string
   x: number
   y: number
   depth: number
   hue: number
-  parentId: string | null
+  parentPath: string | null
 }
 
+// Pfad statt node.id als interne Identität: KI-generierte Mindmap-JSONs
+// garantieren keine eindeutigen ids (schon gesehene Kollisionen führten zu
+// überlappenden Knoten, weil zwei Äste denselben React-Key/Expand-Status
+// teilten). Der Traversal-Pfad ist per Konstruktion eindeutig.
 function layoutTree(root: MindmapNode, expanded: Set<string>) {
   const nodes: Laid[] = []
   let leafCounter = 0
 
-  function visit(n: MindmapNode, depth: number, hue: number, parentId: string | null): Laid {
-    const showChildren = depth === 0 || expanded.has(n.id)
+  function visit(n: MindmapNode, path: string, depth: number, hue: number, parentPath: string | null): Laid {
+    const showChildren = depth === 0 || expanded.has(path)
     const kids = showChildren && n.children ? n.children : []
     const x = depth * (NODE_W + LEVEL_GAP)
-    const laid: Laid = { node: n, x, y: 0, depth, hue, parentId }
+    const laid: Laid = { node: n, path, x, y: 0, depth, hue, parentPath }
     nodes.push(laid)
     if (kids.length === 0) {
       laid.y = leafCounter * ROW_H
       leafCounter++
     } else {
-      const childLaid = kids.map((c, i) => visit(c, depth + 1, depth === 0 ? BRANCH_HUES[i % BRANCH_HUES.length] : hue, n.id))
+      const childLaid = kids.map((c, i) => visit(c, `${path}/${i}`, depth + 1, depth === 0 ? BRANCH_HUES[i % BRANCH_HUES.length] : hue, path))
       laid.y = childLaid.reduce((s, c) => s + c.y, 0) / childLaid.length
     }
     return laid
   }
-  visit(root, 0, BRANCH_HUES[0], null)
+  visit(root, 'root', 0, BRANCH_HUES[0], null)
 
-  const byId = new Map(nodes.map((n) => [n.node.id, n]))
+  const byPath = new Map(nodes.map((n) => [n.path, n]))
   const edges = nodes
-    .filter((n) => n.parentId)
+    .filter((n) => n.parentPath)
     .map((n) => {
-      const p = byId.get(n.parentId!)!
-      return { key: `${p.node.id}→${n.node.id}`, x1: p.x + NODE_W, y1: p.y + PAD, x2: n.x, y2: n.y + PAD, hue: n.hue }
+      const p = byPath.get(n.parentPath!)!
+      return { key: `${p.path}→${n.path}`, x1: p.x + NODE_W, y1: p.y + PAD, x2: n.x, y2: n.y + PAD, hue: n.hue }
     })
 
   const maxX = Math.max(...nodes.map((n) => n.x)) + NODE_W
@@ -82,7 +87,9 @@ function nodeToHtml(n: MindmapNode): string {
 }
 
 export function MindmapModal({ name, tree, onClose }: { name: string; tree: MindmapNode; onClose: () => void }) {
-  const [expanded, setExpanded] = useState<Set<string>>(() => new Set(tree.children?.map((c) => c.id) ?? []))
+  // Nur die Wurzel ist initial sichtbar aufgeklappt (Wurzel + 1. Ast-Ebene =
+  // zwei Generationen) — alles Tiefere klappt erst per Klick auf.
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set())
   const containerRef = useRef<HTMLDivElement>(null)
   const [viewport, setViewport] = useState({ w: 800, h: 480 })
 
@@ -100,10 +107,10 @@ export function MindmapModal({ name, tree, onClose }: { name: string; tree: Mind
   const layout = useMemo(() => layoutTree(tree, expanded), [tree, expanded])
   const scale = Math.max(0.4, Math.min(1, viewport.w / layout.width, viewport.h / layout.height))
 
-  function toggle(id: string) {
+  function toggle(path: string) {
     setExpanded((prev) => {
       const next = new Set(prev)
-      if (next.has(id)) next.delete(id); else next.add(id)
+      if (next.has(path)) next.delete(path); else next.add(path)
       return next
     })
   }
@@ -210,19 +217,18 @@ export function MindmapModal({ name, tree, onClose }: { name: string; tree: Mind
             {layout.nodes.map((n) => {
               const isRoot = n.depth === 0
               const hasKids = !!n.node.children?.length
-              const isOpen = expanded.has(n.node.id)
+              const isOpen = expanded.has(n.path)
               const soft = `hsla(${n.hue}, 75%, 55%, 0.13)`
               const line = `hsla(${n.hue}, 65%, 50%, 0.5)`
               const text = `hsl(${n.hue}, 60%, 34%)`
               return (
                 <motion.button
-                  key={n.node.id}
-                  layout
+                  key={n.path}
                   initial={{ opacity: 0, scale: 0.85 }}
                   animate={{ opacity: 1, scale: 1, x: n.x, y: n.y + PAD - BOX_MIN_H / 2 }}
                   exit={{ opacity: 0, scale: 0.85 }}
                   transition={{ type: 'spring', stiffness: 320, damping: 28 }}
-                  onClick={() => hasKids && toggle(n.node.id)}
+                  onClick={() => hasKids && toggle(n.path)}
                   style={{
                     position: 'absolute', left: 0, top: 0, width: NODE_W, minHeight: BOX_MIN_H,
                     padding: isRoot ? '13px 18px' : '9px 13px', borderRadius: isRoot ? 14 : 12,

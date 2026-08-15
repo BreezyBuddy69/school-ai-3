@@ -5,10 +5,10 @@ import { useRouter } from 'next/navigation'
 import { Menu, PanelRight, Share2 } from 'lucide-react'
 import { useAppStore, refreshProfile } from '@/lib/store'
 import { api, subjectGlyph } from '@/lib/utils'
-import { subjectWords } from '@/lib/subjectWords'
 import { Sidebar, type ChatListItem } from '@/components/chat/Sidebar'
 import { Transcript } from '@/components/chat/Transcript'
 import { Composer } from '@/components/chat/Composer'
+import { SubjectIntro } from '@/components/chat/SubjectIntro'
 import { TopicPicker, type PickerTopic } from '@/components/chat/TopicPicker'
 import { useChatStream } from '@/components/chat/useChatStream'
 import { StudioPanel, TOOLS, type Project, type ToolId } from '@/components/studio/StudioPanel'
@@ -20,7 +20,6 @@ import { PodcastModal } from '@/components/studio/PodcastModal'
 import { SettingsSheet } from '@/components/SettingsSheet'
 import { Modal } from '@/components/ui/Modal'
 import { ParticleTitle } from '@/components/ui/ParticleTitle'
-import { Typewriter } from '@/components/ui/Typewriter'
 import { TourOverlay, type TourStep } from '@/components/ui/TourOverlay'
 type SubjectTree = Record<string, Record<string, Record<string, string>>>
 type MainView = 'home' | 'picker' | 'chat'
@@ -117,11 +116,13 @@ export default function ChatPage() {
     setMobileNav(false)
     setActiveSources([])
     refreshProjects(s)
-    // Neu im Fach (noch keine Chats)? Dann direkt in die Themenwahl.
+    // Themenwahl ist jetzt immer der Default-Einstieg (stark empfohlen, aber
+    // nicht erzwungen) — hat das Fach schon Chats, bleibt "Abbrechen" in der
+    // TopicPicker sichtbar und führt zurück auf die Fach-Startseite.
     const rows = await fetch(api(`/api/chats?subject=${encodeURIComponent(s)}`)).then((r) => r.json()).catch(() => [])
     const list = Array.isArray(rows) ? rows : []
     setChats(list)
-    setView(list.length > 0 ? 'home' : 'picker')
+    setView('picker')
   }
 
   function startNewChat() {
@@ -351,7 +352,15 @@ export default function ChatPage() {
                   </div>
                 )}
                 <div style={{ flex: 1 }}>
-                  <Transcript items={stream.items} onActionAccept={onActionAccept} onActionDecline={onActionDecline} />
+                  <Transcript
+                    items={stream.items} onActionAccept={onActionAccept} onActionDecline={onActionDecline}
+                    empty={subject ? (
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: 14, padding: '40px 0', textAlign: 'center' }}>
+                        <SubjectIntro subject={subject} height="clamp(60px, 11vw, 100px)" />
+                        <p className="t-caption" style={{ maxWidth: 380 }}>Bereit — frag einfach los.</p>
+                      </div>
+                    ) : undefined}
+                  />
                 </div>
               </>
             )}
@@ -360,12 +369,7 @@ export default function ChatPage() {
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 18, padding: '40px 0' }}>
                 {subject ? (
                   <>
-                    <span style={{ fontSize: 40 }}>{subjectGlyph(subject)}</span>
-                    <h1 className="sr-only">{subject}</h1>
-                    <ParticleTitle lines={[subject]} height="clamp(70px, 13vw, 120px)" />
-                    <p className="t-caption anim-in" aria-hidden="true" style={{ fontSize: 14, fontWeight: 600, color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>
-                      <Typewriter words={subjectWords(subject)} />
-                    </p>
+                    <SubjectIntro subject={subject} />
                     <p className="t-lead" style={{ maxWidth: 480 }}>
                       Stell eine Frage — ich lese zuerst deine gewählten Themen und antworte dann. Oder starte im Studio direkt Lernkarten, ein Quiz oder eine Zusammenfassung.
                     </p>
@@ -421,7 +425,16 @@ export default function ChatPage() {
         </div>
 
         {subject && view !== 'picker' && (
-          <div style={{ width: '100%', maxWidth: 760, margin: '0 auto', paddingBottom: 4 }}>
+          <div style={{ width: '100%', maxWidth: 760, margin: '0 auto', paddingBottom: 4, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {activeSources.length === 0 && (
+              <div className="anim-in" style={{
+                alignSelf: 'center', display: 'flex', alignItems: 'center', gap: 8,
+                fontSize: 12.5, color: 'var(--ink-muted)', padding: '2px 4px',
+              }}>
+                <span>Kein Thema ausgewählt — Antworten sind allgemeiner.</span>
+                <button className="btn btn-ghost btn-sm" style={{ padding: '3px 10px' }} onClick={startNewChat}>Thema wählen</button>
+              </div>
+            )}
             <Composer
               onSend={sendMessage} busy={stream.busy}
               placeholder={`Frag mich etwas zu ${subject}…`}
