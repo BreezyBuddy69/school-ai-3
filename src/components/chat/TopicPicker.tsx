@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Check, ChevronDown, ChevronRight, Search } from 'lucide-react'
+import { Check, ChevronDown, ChevronRight, Search, X } from 'lucide-react'
 import { api } from '@/lib/utils'
 import { SubjectIntro } from './SubjectIntro'
 
@@ -43,11 +43,12 @@ function serialize(sel: Selection): string[] {
 }
 
 export function TopicPicker({
-  subject, topics, initial, onConfirm, onCancel,
+  subject, topics, initial, previous, onConfirm, onCancel,
 }: {
   subject: string
   topics: PickerTopic[]
   initial: string[]
+  previous?: string[]
   onConfirm: (slugs: string[]) => void
   onCancel?: () => void
 }) {
@@ -147,11 +148,6 @@ export function TopicPicker({
           Wähl die Themen, die die KI in diesem Chat kennen soll — sie liest sie sichtbar, bevor sie antwortet.
           Tippe auf den Pfeil, um nur einzelne Abschnitte eines Themas zu nehmen.
         </p>
-        {initial.length > 0 && (
-          <p className="t-caption" style={{ marginTop: 4, opacity: 0.7 }}>
-            Vorausgewählt wie im letzten Chat — passe die Auswahl an oder tippe auf <strong>Keine</strong> zum Zurücksetzen.
-          </p>
-        )}
       </div>
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -161,8 +157,38 @@ export function TopicPicker({
             {yearLabel(y)}
           </button>
         ))}
+        {previous && previous.length > 0 && (
+          <button className="btn btn-quiet btn-sm" onClick={() => setSelected(parseInitial(previous))}>
+            Wie im letzten Chat ({previous.length})
+          </button>
+        )}
         <button className="btn btn-ghost btn-sm" onClick={() => setSelected(new Map())}>Keine</button>
       </div>
+
+      {/* Übersicht der Auswahl — unabhängig vom Jahr-Filter sichtbar, sonst
+          wirken Themen aus anderen Jahren "verschwunden" wenn man filtert. */}
+      {selected.size > 0 && (
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {[...selected.keys()].map((file) => {
+            const t = topics.find((x) => x.slug === file)
+            const pick = selected.get(file)
+            const note = pick && pick !== 'all' ? ` (${pick.size})` : ''
+            return (
+              <button
+                key={file} onClick={() => toggleTopic(file)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', fontSize: 12.5,
+                  borderRadius: 999, border: '1px solid var(--accent)', background: 'var(--accent-soft)',
+                  cursor: 'pointer', font: 'inherit', color: 'inherit',
+                }}
+              >
+                {(t?.label ?? file)}{note}
+                <X size={12} />
+              </button>
+            )
+          })}
+        </div>
+      )}
 
       <div style={{ position: 'relative' }}>
         <Search size={15} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-faint)' }} />

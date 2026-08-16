@@ -6,7 +6,7 @@ import { Wordmark } from '@/components/ui/Logo'
 import { subjectGlyph, timeAgo } from '@/lib/utils'
 import type { Profile } from '@/lib/store'
 
-export interface ChatListItem { id: string; subject: string; title: string | null; last_message_at: string; message_count: number }
+export interface ChatListItem { id: string; subject: string; title: string | null; last_message_at: string; message_count: number; sources_json?: string }
 
 // Linke Spalte: Fächerliste ODER Chats des gewählten Fachs. Liquid Glass,
 // eine Ebene Tiefe — keine verschachtelten Menüs.

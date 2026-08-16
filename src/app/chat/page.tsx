@@ -126,10 +126,16 @@ export default function ChatPage() {
   }
 
   function startNewChat() {
-    const lastSources = chats[0] ? activeSources : []
-    setActiveSources(lastSources)
+    setActiveSources([])
     setView('picker')
   }
+
+  // Themen des zuletzt aktiven Chats — nur für den expliziten "Wie im
+  // letzten Chat"-Button im TopicPicker, kein stilles Vorausfüllen mehr.
+  const previousSources = useMemo(() => {
+    if (!chats[0]?.sources_json) return []
+    try { return JSON.parse(chats[0].sources_json) as string[] } catch { return [] }
+  }, [chats])
 
   async function confirmPicker(slugs: string[]) {
     if (!subject) return
@@ -357,7 +363,7 @@ export default function ChatPage() {
           <div style={{ width: '100%', maxWidth: 760, margin: '0 auto', padding: '0 4px', flex: 1, display: 'flex', flexDirection: 'column' }}>
             {view === 'picker' && subject && (
               <TopicPicker
-                subject={subject} topics={topics} initial={activeSources}
+                subject={subject} topics={topics} initial={activeSources} previous={previousSources}
                 onConfirm={confirmPicker}
                 onCancel={chats.length > 0 ? () => setView('home') : undefined}
               />
