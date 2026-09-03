@@ -1,4 +1,4 @@
-# Methoden (MK 1–16, 22–26)
+# Methoden (MK 1–34, 39)
 **Fach:** Philosophie | **Klasse:** 5Wa
 
 ---
@@ -229,4 +229,111 @@ p ODER q ODER r ODER s
 NICHT p, NICHT q, NICHT r
 ──────────────────────────
 Also: s
+```
+
+---
+
+> ✅ MK 17–21, 27–29, 31–32, 39 aus einer Zusammenfassung eines Kollegen (Jahr 6) übernommen und aufbereitet — schliessen die Nummernlücke im gleichen Methoden-Katalog.
+
+## MK 17 – Konträr und kontradiktorisch
+
+| Begriff | Definition | Beispiel |
+|---|---|---|
+| **Kontradiktorisch (Widerspruch)** | Eine Aussage sagt, etwas sei der Fall, die andere sagt, es sei gerade nicht der Fall | „x ist verboten" ↔ „x ist erlaubt" |
+| **Konträr** | A und B können nicht beide wahr sein, aber es ist möglich, dass beide falsch sind | A: „x ist verboten", B: „x ist geboten" → beide falsch möglich: „x ist erlaubt, aber nicht geboten" |
+
+---
+
+## MK 18 – Begriffe in Texten klären
+
+Wird ein Begriff nicht verstanden oder vermutlich unüblich gebraucht:
+1. Begriff nachschlagen (Duden, Lexikon)
+2. Wird er im Text ausdrücklich eingeführt/erläutert?
+3. Wird er in einer bestimmten philosophischen Tradition verwendet?
+4. Wird er entsprechend verwendet?
+
+> Mehrere Interpretationsmöglichkeiten anbieten und diejenige wählen, die gemäss der **wohlwollenden Interpretation** die überzeugendste Position ergibt.
+
+---
+
+## MK 19 – Kategorienfehler
+
+**Definition:** Zuschreibung einer Eigenschaft, die ein Ding gar nicht haben kann.
+
+- Ein Kategorienfehler: „Bern ist süss-sauer"
+- Mehrere Kategorienfehler: „Farblose grüne Ideen schlafen wütend"
+
+---
+
+## MK 20 – Texte bearbeiten
+
+In komplexen Texten reicht Leuchtstift nicht — Abkürzungen zum Markieren:
+
+| Kürzel | Bedeutung | Kürzel | Bedeutung |
+|---|---|---|---|
+| Bsp. | Beispiel | A | Argument |
+| (H)T | (Haupt)These | E | Einwand |
+| ! | Wichtig | ? | Unklar |
+| -> | nachschlagen | | |
+
+---
+
+## MK 27 – Überlegungsgleichgewicht
+
+- Änderung von Einzelurteilen und/oder persönlichen Prinzipien, bis beide konsistent sind (ein Gleichgewicht bilden)
+- Entweder zugeben, dass man im konkreten Fall falsch lag — oder auf der Ebene der Prinzipien Bedingungen einführen, unter denen eine Ausnahme erlaubt ist
+- Muss durch Theorie begründet werden **und** mit dem Alltagsverständnis vereinbar sein
+
+---
+
+## MK 28 – Pro- und Contra-Liste
+
+- Zur Klärung der eigenen Position und zur Debattenvorbereitung: Liste mit Gründen dafür/dagegen (am besten als Tabelle)
+- **Wichtig:** Nicht die Quantität, sondern die **Qualität** der Gründe entscheidet — ein sehr guter Grund kann mehrere schwächere aufwiegen
+
+---
+
+## MK 29 – Debattenkarten
+
+Visualisierung von Beziehungen zwischen Debattenbeiträgen:
+1. Beiträge als ganze Sätze in Kästchen, mit Pfeilen verbunden (nur so beurteilbar, ob wahr/falsch oder ob zwei Beiträge dasselbe sagen)
+2. Pfeile beschriften (z.B. *begründet, kritisiert, widerlegt, relativiert*)
+
+→ Ergebnis: komplexes, aber übersichtliches Netz von Zusammenhängen zwischen Beiträgen.
+
+---
+
+## MK 31 – Zirkuläres Argument
+
+Die Konklusion ist bereits (explizit oder implizit) in den Prämissen enthalten. Logisch gültig und teils sogar stichhaltig — aber **kein gutes Argument**, weil die Wahrheit der Prämisse bereits die Wahrheit der Konklusion voraussetzt.
+
+> Bsp.: P1: Was in der Bibel steht, ist wahr. P2: In der Bibel steht, dass die Bibel das Wort Gottes ist. P3: Das Wort Gottes ist wahr. → K: Was in der Bibel steht, ist wahr.
+
+---
+
+## MK 32 – Begriffsexplikation
+
+Ein neuer, exakterer Begriff ersetzt einen unklaren. Vier Bedingungen:
+1. Ähnlich zum ursprünglichen Begriff
+2. Exakt
+3. Einfach
+4. Fruchtbar (mehr wahre Aussagen möglich als mit dem alten Begriff)
+
+> Bsp.: „Fisch" ≈ „Tier, das im Wasser lebt" schliesst Wale/Delfine nicht aus → präziserer Begriff sinnvoll.
+
+---
+
+## MK 39 – Texte gliedern
+
+Text in Abschnitte unterteilen und für jeden klären:
+- **Inhalt** (Worum geht es?) und **Funktion** (Was soll erreicht werden? — These, Prämisse, Beispiel, Einwand, Erwiderung)
+- Wie hängen die Teile zusammen? Werden alle Prämissen genannt?
+
+**Hierarchische Gliederung (separates Blatt):**
+```
+Einleitung
+These 1
+  Argumente für These 1: A1, A2, …
+  Einwände gegen These 1 und deren Zurückweisung
+Schluss
 ```

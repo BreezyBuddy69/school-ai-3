@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
-import { Download, Printer } from 'lucide-react'
+import { Download } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
+import { ExportBar } from '@/components/studio/ExportBar'
 import { escapeHtml, printAsPdf } from '@/lib/print'
 
 // Mindmap-Renderer: Wurzel links, Äste wachsen nach rechts (Referenz:
@@ -91,7 +92,7 @@ function nodeToHtml(n: MindmapNode): string {
   return `<li>${escapeHtml(n.label)}${kids}</li>`
 }
 
-export function MindmapModal({ name, tree, onClose }: { name: string; tree: MindmapNode; onClose: () => void }) {
+export function MindmapModal({ projectId, name, tree, onClose }: { projectId: string; name: string; tree: MindmapNode; onClose: () => void }) {
   // Nur die Wurzel ist initial sichtbar aufgeklappt (Wurzel + 1. Ast-Ebene =
   // zwei Generationen) — alles Tiefere klappt erst per Klick auf.
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set())
@@ -182,12 +183,11 @@ export function MindmapModal({ name, tree, onClose }: { name: string; tree: Mind
   }
 
   return (
-    <Modal title={tree.label} onClose={onClose} wide
+    <Modal title={tree.label} onClose={onClose} wide focusable
       footer={
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          <button className="btn btn-quiet btn-sm" onClick={printPdf}><Printer size={14} /> PDF</button>
+        <ExportBar projectId={projectId} filename={name.replace(/^Mindmap:\s*/i, '')} onPrint={printPdf}>
           <button className="btn btn-quiet btn-sm" onClick={exportPng}><Download size={14} /> PNG</button>
-        </div>
+        </ExportBar>
       }
     >
       <div

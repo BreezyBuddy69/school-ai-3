@@ -69,6 +69,33 @@ export function useChatStream(onDone?: (answer: string, audioBase64?: string) =>
       const decoder = new TextDecoder()
       let buffer = ''
 
+      // Text-Deltas werden gesammelt und höchstens alle 90 ms in den State
+      // geschrieben. Vorher löste jedes einzelne Token ein Rendern aus — und
+      // damit ein Neu-Parsen des ganzen Markdowns (GFM + KaTeX) plus einen
+      // neuen Smooth-Scroll. Genau das war das Ruckeln beim Generieren; auf
+      // einem gedrosselten Laptop messbar als ~1,2 s blockierte Hauptthread-
+      // Zeit pro 6 s Antwort. Sichtbar bleibt es flüssig (90 ms < Lesetempo).
+      let pending = ''
+      let lastFlush = 0
+      const flush = () => {
+        if (!pending) return
+        const chunk = pending
+        pending = ''
+        lastFlush = Date.now()
+        setItems((prev) => {
+          const next = [...prev]
+          const t = next.findIndex((it) => it.kind === 'thinking')
+          if (t !== -1) next.splice(t, 1)
+          const last = next[next.length - 1]
+          if (last?.kind === 'assistant' && last.streaming) {
+            next[next.length - 1] = { ...last, text: last.text + chunk }
+          } else {
+            next.push({ kind: 'assistant', text: chunk, streaming: true })
+          }
+          return next
+        })
+      }
+
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
@@ -79,6 +106,15 @@ export function useChatStream(onDone?: (answer: string, audioBase64?: string) =>
           const line = raw.trim()
           if (!line.startsWith('data:')) continue
           const ev = JSON.parse(line.slice(5))
+          if (ev.type === 'delta') {
+            answer += ev.text
+            pending += ev.text
+            if (Date.now() - lastFlush >= 90) flush()
+            continue
+          }
+          // Jedes andere Ereignis (Tool, Fehler, done) braucht den bisherigen
+          // Text zuerst — sonst überholt es die Reihenfolge im Transkript.
+          flush()
           setItems((prev) => {
             const next = [...prev]
             const dropThinking = () => {
@@ -106,17 +142,6 @@ export function useChatStream(onDone?: (answer: string, audioBase64?: string) =>
                 if (t !== -1) next.splice(t, 0, marker); else next.push(marker)
                 break
               }
-              case 'delta': {
-                answer += ev.text
-                dropThinking()
-                const last = next[next.length - 1]
-                if (last?.kind === 'assistant' && last.streaming) {
-                  next[next.length - 1] = { ...last, text: last.text + ev.text }
-                } else {
-                  next.push({ kind: 'assistant', text: ev.text, streaming: true })
-                }
-                break
-              }
               case 'audio': audioB64 = ev.data; break
               case 'action': dropThinking(); next.push({ kind: 'action', tool: ev.tool, topic: ev.topic ?? '', auto: !!ev.auto, original: ev.original ?? '' }); break
               case 'gate': dropThinking(); next.push({ kind: 'gate', reason: ev.reason, upgrade: ev.upgrade }); break
@@ -133,6 +158,7 @@ export function useChatStream(onDone?: (answer: string, audioBase64?: string) =>
           })
         }
       }
+      flush()
       onDone?.(answer, audioB64)
     } catch {
       setItems((prev) => [...prev.filter((it) => it.kind !== 'thinking'), { kind: 'error', text: 'Verbindung unterbrochen — probier es nochmal.' }])

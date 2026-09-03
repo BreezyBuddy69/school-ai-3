@@ -123,7 +123,7 @@ export async function POST(req: NextRequest) {
           const toolId = newId('t')
           const label = slug.split('#')[0].split('/').pop()?.replace(/-/g, ' ') ?? slug
           emit({ type: 'tool', id: toolId, icon: '📖', title: 'Liest Thema', detail: `„${label}"`, status: 'running' })
-          const topic = readTopic(slug)
+          const topic = readTopic(slug, user?.id)
           if (topic) {
             // Sprechender Titel statt Slug: bei Teilauswahl steht hier
             // "zelle › 3. Mitose" — damit weiss das Modell, worauf der Fokus

@@ -119,7 +119,14 @@ export function Transcript({ items, empty, onActionAccept, onActionDecline }: {
   onActionDecline?: (original: string) => void
 }) {
   const bottomRef = useRef<HTMLDivElement>(null)
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }) }, [items])
+  // Während des Streams hart scrollen: ein „smooth"-Scroll, der zehnmal pro
+  // Sekunde neu startet, ruckelt sichtbar und kommt nie an. Sanft bleibt es
+  // für neue Nachrichten, wenn nichts mehr nachwächst.
+  const lastItem = items[items.length - 1]
+  const streaming = lastItem?.kind === 'assistant' && !!lastItem.streaming
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: streaming ? 'auto' : 'smooth', block: 'end' })
+  }, [items, streaming])
 
   // Vorlesen: eine Antwort gleichzeitig, Klick auf ■ (oder eine andere) stoppt.
   const [speakingIdx, setSpeakingIdx] = useState<number | null>(null)

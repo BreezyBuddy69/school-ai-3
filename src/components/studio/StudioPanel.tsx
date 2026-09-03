@@ -1,14 +1,15 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { ChevronDown, FileText, FolderInput, GitBranch, Headphones, HelpCircle, Layers, MoreHorizontal, Pencil, Pin, Trash2 } from 'lucide-react'
+import { ChevronDown, FileText, FolderInput, GitBranch, Headphones, HelpCircle, Layers, MoreHorizontal, Pencil, Pin, RefreshCw, Table2, Trash2 } from 'lucide-react'
 import { timeAgo } from '@/lib/utils'
 
 export interface Project {
   id: string; subject: string; type: string; name: string; content: string; pinned: number; created_at: string
   folder_id?: string | null; folder_name?: string | null
-  /** Optimistische Platzhalter-Karte, während die Generierung noch läuft (siehe chat/page.tsx generateTool). */
-  pending?: boolean
+  /** Serverseitiger Zustand der Generierung — pending überlebt Fach-/Tabwechsel. */
+  status?: 'pending' | 'ready' | 'error'
+  error?: string | null
 }
 
 export const TOOLS = [
@@ -16,13 +17,14 @@ export const TOOLS = [
   { id: 'zusammenfassung', title: 'Zusammenfassung', desc: 'Niveau wählbar · Word-Export', Icon: FileText, premium: false },
   { id: 'quiz', title: 'Quiz', desc: 'Üben oder Prüfungssimulation', Icon: HelpCircle, premium: false },
   { id: 'mindmap', title: 'Mindmap', desc: 'Zusammenhänge sehen', Icon: GitBranch, premium: false },
-  { id: 'podcast', title: 'Podcast', desc: 'Gesprochene Zusammenfassung', Icon: Headphones, premium: true },
+  { id: 'tabelle', title: 'Tabelle', desc: 'Vergleich · Excel-Export', Icon: Table2, premium: false },
+  { id: 'podcast', title: 'Podcast', desc: 'Länge & Tiefe wählbar', Icon: Headphones, premium: true },
 ] as const
 
 export type ToolId = (typeof TOOLS)[number]['id']
 
 const TYPE_ICON: Record<string, typeof Layers> = {
-  lernkarten: Layers, zusammenfassung: FileText, quiz: HelpCircle, mindmap: GitBranch, podcast: Headphones,
+  lernkarten: Layers, zusammenfassung: FileText, quiz: HelpCircle, mindmap: GitBranch, podcast: Headphones, tabelle: Table2,
 }
 
 // Rechte Spalte: Werkzeuge + gespeicherte Projekte des Fachs. Jedes Artefakt
@@ -31,7 +33,7 @@ const TYPE_ICON: Record<string, typeof Layers> = {
 // mehrere Themen), werden automatisch in einem gemeinsamen Ordner gruppiert.
 
 export function StudioPanel({
-  projects, dueCards, tier, onLaunch, onOpenProject, onReview, onTogglePin, onDeleteProject, onUpgrade,
+  projects, dueCards, tier, onLaunch, onOpenProject, onReview, onTogglePin, onDeleteProject, onRetryProject, onUpgrade,
   onRenameProject, onMoveProject, onRenameFolder,
 }: {
   projects: Project[]
@@ -42,6 +44,7 @@ export function StudioPanel({
   onReview: () => void
   onTogglePin: (p: Project) => void
   onDeleteProject: (p: Project) => void
+  onRetryProject: (p: Project) => void
   onUpgrade: () => void
   onRenameProject: (p: Project, name: string) => void
   onMoveProject: (p: Project, folderId: string | null, folderName?: string) => void
@@ -80,14 +83,31 @@ export function StudioPanel({
 
   function ProjectRow({ p }: { p: Project }) {
     const Icon = TYPE_ICON[p.type] ?? FileText
-    if (p.pending) {
+    if (p.status === 'pending') {
       return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '9px 6px 9px 12px' }}>
+        <div className="shimmer" style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '9px 6px 9px 12px', borderRadius: 11 }}>
           <span className="spinner-ring" aria-hidden />
           <span style={{ flex: 1, minWidth: 0 }}>
             <span style={{ display: 'block', fontSize: 12.5, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--ink-muted)' }}>{p.name}</span>
-            <span className="t-caption" style={{ fontSize: 10.5 }}>Wird erstellt…</span>
+            <span className="t-caption" style={{ fontSize: 10.5 }}>Wird erstellt — läuft weiter, auch wenn du weggehst</span>
           </span>
+        </div>
+      )
+    }
+    if (p.status === 'error') {
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 4px 9px 12px', borderRadius: 11, background: 'rgba(208,52,44,0.07)' }}>
+          <Icon size={13} style={{ flexShrink: 0, color: 'var(--err)' }} />
+          <span style={{ flex: 1, minWidth: 0 }}>
+            <span style={{ display: 'block', fontSize: 12.5, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
+            <span className="t-caption" style={{ fontSize: 10.5, color: 'var(--err)' }}>{p.error ?? 'Fehlgeschlagen'}</span>
+          </span>
+          <button onClick={() => onRetryProject(p)} className="iconbtn" style={{ width: 26, height: 26, color: 'var(--accent)' }} title="Nochmal versuchen">
+            <RefreshCw size={12} />
+          </button>
+          <button onClick={() => onDeleteProject(p)} className="iconbtn" style={{ width: 26, height: 26, marginRight: 4, color: 'var(--ink-faint)' }} title="Verwerfen">
+            <Trash2 size={12} />
+          </button>
         </div>
       )
     }

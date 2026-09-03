@@ -69,6 +69,23 @@ Blockquotes mit Präfix `Merke:` oder `Achtung Prüfung:` (werden im
 Word-Export zu Akzent-Callout-Boxen), LaTeX in `$…$`/`$$…$$`.
 Je sauberer das Markdown, desto schöner das Word-Dokument.
 
+### Tabelle — **kein eigener Workflow nötig**
+Das Werkzeug „Tabelle" (seit 2026-08-17) ruft denselben Webhook wie die
+Zusammenfassung auf; der Unterschied steckt komplett im `content`
+(`buildTablePrompt` in `src/lib/studio-config.ts`): erwartet wird eine Zeile
+`# Titel` plus **genau eine** GFM-Tabelle, kein Fliesstext. Die App prüft nur,
+ob ein `|` in der Antwort steht, und speichert das Markdown roh — Web-Ansicht,
+Word- und Excel-Export lesen alle daraus.
+
+### Podcast — Konfiguration steckt im Prompt
+Länge (~3/7/12 Min), Tiefe (Überblick/Deep Talk/Prüfung), Ton und Extras
+kommen als Klartext-Anweisungen im `content` an (`buildPodcastPrompt`), inkl.
+Wortzahl-Vorgabe (135 Wörter ≈ 1 Minute gesprochen). **Am Workflow ändert sich
+nichts** — er soll nur das Skript in der angefragten Länge liefern; die App
+rechnet die Spieldauer danach exakt aus der PCM-Länge (24 kHz · 16 Bit · mono).
+Ein 12-Minuten-Skript braucht spürbar länger als früher: der Aufruf wartet
+jetzt bis zu 7 Minuten, weil kein Browser mehr an der Leitung hängt.
+
 ## Neue Workflows (v2)
 
 ### `lgki-mail` — GEBAUT (2026-07-20, im Workflow „LG Agents")

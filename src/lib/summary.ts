@@ -54,13 +54,14 @@ export function sanitizeSummaryConfig(raw: unknown): SummaryConfig {
 // ── Erkennung: will die Nachricht eines der Studio-Werkzeuge? (agentische
 // Aktion im Chat) — ein Keyword-Set pro Tool, geprüft in fester Reihenfolge,
 // damit z.B. "Zusammenfassung als Lernkarten" nicht zweideutig bleibt.
-const TOOL_ORDER: ToolId[] = ['lernkarten', 'quiz', 'mindmap', 'podcast', 'zusammenfassung']
+const TOOL_ORDER: ToolId[] = ['lernkarten', 'quiz', 'mindmap', 'podcast', 'tabelle', 'zusammenfassung']
 
 const TOOL_KEYWORDS: Record<ToolId, RegExp> = {
   lernkarten: /(lernkarten|karteikarten|flashcards?|leitner.?karten)/i,
   quiz: /(quiz|prüfungsfragen|testfragen|multiple.?choice|üb(u|ue)ngsfragen)/i,
   mindmap: /(mind ?map|mindkarte|gedankenkarte)/i,
   podcast: /(podcast|hörbeitrag|audio.?zusammenfassung)/i,
+  tabelle: /(tabelle|tabellarisch|übersichtstabelle|vergleichstabelle|gegenüberstellung|excel)/i,
   zusammenfassung: /(zusammenfassung|zusammen ?fassen|fass .{0,40}zusammen|\bzsmf\b|\bzf\b|summary|lernskript)/i,
 }
 
@@ -69,6 +70,7 @@ const TOOL_STRIP: Record<ToolId, RegExp> = {
   quiz: /\bquiz\b|\bprüfungsfragen\b|\btestfragen\b|\bmultiple.?choice\b|\büb(u|ue)ngsfragen\b/gi,
   mindmap: /\bmind ?map\b|\bmindkarte\b|\bgedankenkarte\b/gi,
   podcast: /\bpodcast\b|\bhörbeitrag\b|\baudio.?zusammenfassung\b/gi,
+  tabelle: /\btabellen?\b|\btabellarisch\b|\bübersichtstabelle\b|\bvergleichstabelle\b|\bgegenüberstellung\b|\bexcel\b/gi,
   zusammenfassung: /zusammen ?fassung(en)?|zusammen ?fassen|\bfass(e|t)?\b|\bzusammen\b|\bzsmf\b|\bsummary\b|\blernskript\b/gi,
 }
 

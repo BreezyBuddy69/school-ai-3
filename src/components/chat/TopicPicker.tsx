@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Check, ChevronDown, ChevronRight, Search, X } from 'lucide-react'
+import { Check, ChevronDown, ChevronRight, Search, Upload, X } from 'lucide-react'
 import { api } from '@/lib/utils'
 import { SubjectIntro } from './SubjectIntro'
 
@@ -19,6 +19,7 @@ type Pick = 'all' | Set<number>
 type Selection = Map<string, Pick>
 
 interface Hit { slug: string; label: string; year: string; subject: string; section?: number; sectionTitle?: string; snippet?: string }
+interface UploadRow { id: string; name: string; bytes: number }
 
 function parseInitial(slugs: string[]): Selection {
   const sel: Selection = new Map()
@@ -45,7 +46,8 @@ function serialize(sel: Selection): string[] {
 export function TopicPicker({
   subject, topics, initial, previous, onConfirm, onCancel,
 }: {
-  subject: string
+  // null = globale Suche ohne vorgewähltes Fach (über alle Fächer/Jahre).
+  subject: string | null
   topics: PickerTopic[]
   initial: string[]
   previous?: string[]
@@ -59,20 +61,67 @@ export function TopicPicker({
   const [yearFilter, setYearFilter] = useState<string | null>(null)
   const [expanded, setExpanded] = useState<string | null>(null)
   const [sections, setSections] = useState<Record<string, string[]>>({})
+  const [uploads, setUploads] = useState<UploadRow[]>([])
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
 
   const years = useMemo(() => [...new Set(topics.map((t) => t.year))].sort(), [topics])
 
+  // Eigene Dateien (PDF/TXT/MD) — eigene Liste neben den Curriculum-Themen,
+  // aber dieselbe Auswahl-Map (Slug "upload:<id>").
+  useEffect(() => {
+    if (!subject) { setUploads([]); return }
+    fetch(api(`/api/uploads?subject=${encodeURIComponent(subject)}`))
+      .then((r) => r.json())
+      .then((rows) => Array.isArray(rows) && setUploads(rows))
+      .catch(() => {})
+  }, [subject])
+
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file || !subject) return
+    setUploading(true)
+    setUploadError(null)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      fd.append('subject', subject)
+      const res = await fetch(api('/api/uploads'), { method: 'POST', body: fd })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) { setUploadError(data.error ?? 'Upload fehlgeschlagen.'); return }
+      setUploads((prev) => [data, ...prev])
+      toggleTopic(`upload:${data.id}`)
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  function removeUpload(id: string) {
+    setUploads((prev) => prev.filter((u) => u.id !== id))
+    update((next) => { next.delete(`upload:${id}`) })
+    fetch(api(`/api/uploads/${id}`), { method: 'DELETE' }).catch(() => {})
+  }
+
+  function labelFor(file: string): string {
+    if (file.startsWith('upload:')) return uploads.find((u) => u.id === file.slice(7))?.name ?? 'Datei'
+    return topics.find((t) => t.slug === file)?.label ?? file.split('/').pop()?.replace(/-/g, ' ') ?? file
+  }
+
   // Volltextsuche serverseitig (Titel + Inhalt). Debounce, damit nicht jeder
   // Tastendruck eine Anfrage auslöst; ein leeres Feld zeigt wieder die Liste.
+  // Ohne Fach (globale Suche) läuft sie über ALLE Fächer/Jahre gleichzeitig —
+  // searchTopics() im Backend kann das schon, nur der Filter fällt hier weg.
   const seq = useRef(0)
   useEffect(() => {
     const q = search.trim()
     if (q.length < 2) { setHits(null); setSearching(false); return }
     setSearching(true)
     const mine = ++seq.current
+    const scope = subject ? `&subject=${encodeURIComponent(subject)}` : ''
     const t = setTimeout(async () => {
       try {
-        const res = await fetch(api(`/api/subjects?q=${encodeURIComponent(q)}&subject=${encodeURIComponent(subject)}`))
+        const res = await fetch(api(`/api/subjects?q=${encodeURIComponent(q)}${scope}`))
         const data = await res.json()
         if (mine === seq.current) setHits(data.hits ?? [])
       } finally {
@@ -143,26 +192,31 @@ export function TopicPicker({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 620, width: '100%', margin: '0 auto' }}>
       <div>
-        <SubjectIntro subject={subject} height="clamp(56px, 9vw, 84px)" />
+        {subject ? (
+          <SubjectIntro subject={subject} height="clamp(56px, 9vw, 84px)" />
+        ) : (
+          <h2 style={{ fontSize: 20, fontWeight: 600, margin: 0 }}>Thema oder Lernziel suchen</h2>
+        )}
         <p className="t-caption" style={{ marginTop: 6 }}>
-          Wähl die Themen, die die KI in diesem Chat kennen soll — sie liest sie sichtbar, bevor sie antwortet.
-          Tippe auf den Pfeil, um nur einzelne Abschnitte eines Themas zu nehmen.
+          {subject
+            ? 'Wähl die Themen, die die KI in diesem Chat kennen soll — sie liest sie sichtbar, bevor sie antwortet. Tippe auf den Pfeil, um nur einzelne Abschnitte eines Themas zu nehmen.'
+            : 'Sucht über alle Fächer und Jahre gleichzeitig — gib ein Thema oder Stichwörter aus deinem Lernziel ein. Das Fach für den Chat wird automatisch aus deiner Auswahl erkannt.'}
         </p>
       </div>
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <button className="btn btn-quiet btn-sm" onClick={() => selectScope(topics.map((t) => t.slug))}>Ganzes Fach</button>
-        {years.filter((y) => y !== 'vokabeln').map((y) => (
+        {subject && <button className="btn btn-quiet btn-sm" onClick={() => selectScope(topics.map((t) => t.slug))}>Ganzes Fach</button>}
+        {subject && years.filter((y) => y !== 'vokabeln').map((y) => (
           <button key={y} className="btn btn-quiet btn-sm" onClick={() => selectScope(topics.filter((t) => t.year === y).map((t) => t.slug))}>
             {yearLabel(y)}
           </button>
         ))}
-        {previous && previous.length > 0 && (
+        {subject && previous && previous.length > 0 && (
           <button className="btn btn-quiet btn-sm" onClick={() => setSelected(parseInitial(previous))}>
             Wie im letzten Chat ({previous.length})
           </button>
         )}
-        <button className="btn btn-ghost btn-sm" onClick={() => setSelected(new Map())}>Keine</button>
+        {selected.size > 0 && <button className="btn btn-ghost btn-sm" onClick={() => setSelected(new Map())}>Keine</button>}
       </div>
 
       {/* Übersicht der Auswahl — unabhängig vom Jahr-Filter sichtbar, sonst
@@ -170,7 +224,6 @@ export function TopicPicker({
       {selected.size > 0 && (
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {[...selected.keys()].map((file) => {
-            const t = topics.find((x) => x.slug === file)
             const pick = selected.get(file)
             const note = pick && pick !== 'all' ? ` (${pick.size})` : ''
             return (
@@ -182,9 +235,55 @@ export function TopicPicker({
                   cursor: 'pointer', font: 'inherit', color: 'inherit',
                 }}
               >
-                {(t?.label ?? file)}{note}
+                {labelFor(file)}{note}
                 <X size={12} />
               </button>
+            )
+          })}
+        </div>
+      )}
+
+      {subject && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span className="t-caption" style={{ fontWeight: 500 }}>Eigene Dateien</span>
+            <label className="btn btn-quiet btn-sm" style={{ cursor: uploading ? 'default' : 'pointer', opacity: uploading ? 0.6 : 1 }}>
+              <Upload size={13} style={{ marginRight: 5 }} />
+              {uploading ? 'Lädt hoch…' : 'PDF/Text hochladen'}
+              <input
+                type="file" accept=".pdf,.txt,.md,application/pdf,text/plain,text/markdown"
+                onChange={handleUpload} disabled={uploading} style={{ display: 'none' }}
+              />
+            </label>
+          </div>
+          {uploadError && <p className="t-caption" style={{ color: '#c0392b' }}>{uploadError}</p>}
+          {uploads.length === 0 && !uploading && (
+            <p className="t-caption">Noch keine — z.B. ein PDF-Skript hochladen, damit die KI es mitlesen kann.</p>
+          )}
+          {uploads.map((u) => {
+            const slug = `upload:${u.id}`
+            const on = selected.has(slug)
+            return (
+              <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <button
+                  onClick={() => toggleTopic(slug)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', flex: 1, minWidth: 0,
+                    textAlign: 'left', cursor: 'pointer', font: 'inherit', borderRadius: 12, color: 'inherit',
+                    border: `1px solid ${on ? 'var(--accent)' : 'var(--hairline)'}`,
+                    background: on ? 'var(--accent-soft)' : 'var(--canvas)',
+                  }}
+                >
+                  {box(on, 17)}
+                  <span style={{ flex: 1, minWidth: 0, fontSize: 13.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.name}</span>
+                </button>
+                <button
+                  onClick={() => removeUpload(u.id)} aria-label="Löschen"
+                  style={{ padding: 6, background: 'none', border: 'none', color: 'var(--ink-faint)', cursor: 'pointer' }}
+                >
+                  <X size={14} />
+                </button>
+              </div>
             )
           })}
         </div>
@@ -228,12 +327,14 @@ export function TopicPicker({
                     {h.label}{h.sectionTitle && <span style={{ opacity: 0.75, fontWeight: 400 }}> › {h.sectionTitle}</span>}
                   </span>
                   {h.snippet && <span className="t-caption" style={{ display: 'block', marginTop: 2 }}>{h.snippet}</span>}
-                  <span className="t-caption">{yearLabel(h.year)}</span>
+                  <span className="t-caption">{subject ? yearLabel(h.year) : `${h.subject} · ${yearLabel(h.year)}`}</span>
                 </span>
               </button>
             )
           })}
         </div>
+      ) : !subject ? (
+        <p className="t-caption">Tipp z. B. „Mitose", „Französische Revolution" oder ein Stichwort aus deinem Lernziel — Treffer aus allen Fächern erscheinen automatisch.</p>
       ) : (
         <>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -313,7 +414,7 @@ export function TopicPicker({
       <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', alignItems: 'center', paddingBottom: 24 }}>
         {partial > 0 && <span className="t-caption" style={{ marginRight: 'auto' }}>{partial} davon nur teilweise</span>}
         {onCancel && <button className="btn btn-ghost" onClick={onCancel}>Abbrechen</button>}
-        <button className="btn btn-primary" onClick={() => onConfirm(serialize(selected))}>
+        <button className="btn btn-primary" disabled={!subject && count === 0} onClick={() => onConfirm(serialize(selected))}>
           Chat starten{count > 0 ? ` · ${count} ${count === 1 ? 'Thema' : 'Themen'}` : ''}
         </button>
       </div>

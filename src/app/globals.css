@@ -250,6 +250,58 @@ input.field:focus, textarea.field:focus, select.field:focus {
 .plan-step.active .plan-text { font-weight: 600; }
 .plan-step.err .plan-glyph, .plan-step.err .plan-text { color: var(--err); }
 
+/* ── Glanz-Sweep: läuft über alles, was gerade erzeugt wird (Studio-Karte,
+   Skelett-Zeilen im Viewer). Nur background-position bewegt sich, also kein
+   Layout und kein Repaint der Umgebung. ─────────────────────────────────── */
+.shimmer {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  /* Der Sweep läuft auf einer Glas-Fläche (backdrop-filter). Ohne contain
+     müsste der Browser die Unschärfe des ganzen Panels neu rechnen, statt nur
+     die Zeile — spürbar auf schwachen Laptops. */
+  contain: paint;
+}
+.shimmer::after {
+  content: '';
+  position: absolute; inset: 0; z-index: 1;
+  background: linear-gradient(100deg,
+    transparent 20%,
+    color-mix(in srgb, var(--accent) 14%, transparent) 42%,
+    color-mix(in srgb, var(--accent) 26%, transparent) 50%,
+    color-mix(in srgb, var(--accent) 14%, transparent) 58%,
+    transparent 80%);
+  background-size: 250% 100%;
+  animation: shimmer-sweep 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  pointer-events: none;
+}
+@keyframes shimmer-sweep {
+  from { background-position: 150% 0; }
+  to   { background-position: -150% 0; }
+}
+/* Platzhalter-Balken (Viewer, während generiert wird) */
+.skeleton { background: var(--parchment); border-radius: 8px; height: 13px; }
+@media (prefers-reduced-motion: reduce) {
+  .shimmer::after { animation: none; opacity: 0.35; }
+}
+
+/* ── Podcast-Player: eigener Balken statt <audio controls>, weil der native
+   Player je nach Browser weder Gesamtdauer noch Zeiger zeigt. ───────────── */
+.player-track {
+  position: relative; height: 22px; flex: 1; cursor: pointer;
+  display: flex; align-items: center; touch-action: none;
+}
+.player-rail { position: absolute; left: 0; right: 0; height: 5px; border-radius: 99px; background: var(--hairline); }
+.player-fill { position: absolute; left: 0; height: 5px; border-radius: 99px; background: var(--accent); }
+.player-thumb {
+  position: absolute; width: 13px; height: 13px; border-radius: 50%;
+  background: var(--accent); border: 2px solid var(--canvas); margin-left: -6.5px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.28);
+  transition: transform 120ms var(--spring);
+}
+.player-track:hover .player-thumb, .player-track:active .player-thumb { transform: scale(1.25); }
+.player-time { font-size: 12px; color: var(--ink-muted); font-variant-numeric: tabular-nums; flex: none; }
+
 /* Rotierender Ring — Platzhalter-Projektkarte im Studio, während generiert wird. */
 .spinner-ring {
   width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0;

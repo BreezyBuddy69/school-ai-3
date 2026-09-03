@@ -34,6 +34,10 @@ const HOOKS = {
   chat: { free: 'lgagentfree-42ae-8caf-4bf7db07019d', pro: 'lgagent-42ae-8caf-4bf7db07019d' },
   lernkarten: { free: 'lgagentkarteikartenfree-42ae-8caf-4bf7db07019d', pro: 'lgagentkarteikartenpro-42ae-8caf-4bf7db07019d' },
   zusammenfassung: { free: 'lgagentzusammenfassungfree-42ae-8caf-4bf7db07019d', pro: 'lgagentzusammenfassungpro-42ae-8caf-4bf7db07019d' },
+  // Tabelle hat bewusst KEINEN eigenen Workflow — sie ist derselbe Auftrag an
+  // dasselbe Modell, nur mit anderem Prompt (studio-config.ts). Ein zweiter
+  // n8n-Workflow wäre reine Verdopplung samt zweiter Fehlerquelle.
+  tabelle: { free: 'lgagentzusammenfassungfree-42ae-8caf-4bf7db07019d', pro: 'lgagentzusammenfassungpro-42ae-8caf-4bf7db07019d' },
   quiz: { free: 'lgagentquizfree-42ae-8caf-4bf7db07019d', pro: 'lgagentquizpro-42ae-8caf-4bf7db07019d' },
   mindmap: { free: 'lgagentmindmapfree-42ae-8caf-4bf7db07019d', pro: 'lgagentmindmapfree-42ae-8caf-4bf7db07019d'.replace('free', 'pro') },
   // Podcast hat nur einen Workflow (kein separates Free-Modell-Routing) —
@@ -73,6 +77,27 @@ export async function sendMail(
     return res.ok
   } catch {
     return false
+  }
+}
+
+/**
+ * Best-effort Mail-Ping bei neuem Feedback (Webhook `lgki-feedback`, Gmail an
+ * Jayden persönlich). Die eigentliche Quelle bleibt die `feedback`-Tabelle
+ * bzw. das Admin-Cockpit — die Mail ist nur der Wecker, damit er's nicht
+ * verpasst. Darf das Speichern (POST /api/feedback) nie verzögern oder
+ * scheitern lassen, exakt wie logRegistration/logRedemption unten.
+ */
+export async function notifyFeedback(text: string, email: string | null, tier?: string): Promise<void> {
+  if (isDemoMode()) return
+  try {
+    await fetch(`${BASE}/lgki-feedback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, email, tier }),
+      signal: AbortSignal.timeout(8_000),
+    })
+  } catch {
+    // Feedback steht so oder so in der DB — die Mail ist reine Kür.
   }
 }
 
@@ -137,7 +162,11 @@ export async function callN8n(kind: HookKind, tier: Tier, payload: Record<string
     // 120s laufen (live gemessen: 161.8s für 11 Quizfragen) — der Client brach
     // dann vor n8n ab, obwohl die Antwort kurz danach fertig war ("Generierung
     // hat nicht geklappt" trotz gültigem Ergebnis in den n8n-Executions).
-    signal: AbortSignal.timeout(kind === 'podcast' ? 240_000 : 180_000),
+    // Seit die Generierung als Hintergrund-Job läuft (studio-job.ts) wartet
+    // hier kein Browser mehr mit — ein grosszügiges Fenster kostet nichts und
+    // verhindert, dass ein langer Podcast (12-Minuten-Skript + Synthese) kurz
+    // vor der Ziellinie abgeschnitten wird.
+    signal: AbortSignal.timeout(kind === 'podcast' ? 420_000 : 240_000),
   })
   if (!res.ok) throw new Error(`n8n ${kind} antwortete ${res.status}`)
   const raw = await res.text()
@@ -197,6 +226,15 @@ function demoResponse(kind: HookKind, payload: Record<string, unknown>): string 
           { label: 'Echtbetrieb', children: [{ label: 'N8N_SECRET setzen' }, { label: 'Workflows deployen' }, { label: 'Secret prüfen' }] },
         ],
       })
+    case 'tabelle':
+      return [
+        `# ${topic} — Tabelle (Demo)`,
+        ``,
+        `| Begriff | Bedeutung | Beispiel |`,
+        `|---|---|---|`,
+        `| Demo-Modus | Betrieb ohne n8n-Backend | Diese Zeile |`,
+        `| Excel-Export | Dieselbe Tabelle als .xlsx | Knopf unten rechts |`,
+      ].join('\n')
     case 'zusammenfassung':
       return [
         `# ${topic} — Zusammenfassung (Demo)`,

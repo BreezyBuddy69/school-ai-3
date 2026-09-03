@@ -82,11 +82,13 @@ function migrate(d: DatabaseSync) {
     id         TEXT PRIMARY KEY,
     user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     subject    TEXT NOT NULL,
-    type       TEXT NOT NULL CHECK (type IN ('lernkarten','zusammenfassung','quiz','mindmap','lernplan','podcast')),
+    type       TEXT NOT NULL CHECK (type IN ('lernkarten','zusammenfassung','quiz','mindmap','lernplan','podcast','tabelle')),
     name       TEXT NOT NULL,
     content    TEXT NOT NULL,
     pinned     INTEGER NOT NULL DEFAULT 0,
     folder_id  TEXT,
+    status     TEXT NOT NULL DEFAULT 'ready',
+    error      TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
   CREATE INDEX IF NOT EXISTS idx_projects_user ON projects(user_id, subject);
@@ -151,6 +153,16 @@ function migrate(d: DatabaseSync) {
     expires_at TEXT NOT NULL,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
+  CREATE TABLE IF NOT EXISTS uploads (
+    id         TEXT PRIMARY KEY,
+    user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    subject    TEXT NOT NULL,
+    name       TEXT NOT NULL,
+    content    TEXT NOT NULL,
+    bytes      INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_uploads_user ON uploads(user_id, subject);
   `)
   // Nachträgliche Spalten (migrationssicher: existiert sie schon, ist das ok)
   try { d.exec('ALTER TABLE users ADD COLUMN verified INTEGER NOT NULL DEFAULT 0') } catch { /* existiert */ }
@@ -159,6 +171,65 @@ function migrate(d: DatabaseSync) {
   try { d.exec('ALTER TABLE users ADD COLUMN verify_code_expires TEXT') } catch { /* existiert */ }
   migrateProjectsTable(d)
   migrateCardsTable(d)
+  migrateProjectStatus(d)
+
+  // Startet der Container neu, während eine Generierung läuft, ist der Job
+  // weg — die Zeile bliebe sonst für immer „wird erstellt" und die App würde
+  // ewig danach fragen. Beim Hochfahren also alles Liegengebliebene auf
+  // „fehlgeschlagen" setzen; wiederholen kann man es mit einem Klick.
+  try {
+    d.exec(`UPDATE projects SET status = 'error', error = 'Der Server wurde neu gestartet — bitte nochmal versuchen.'
+            WHERE status = 'pending' AND created_at < datetime('now', '-20 minutes')`)
+  } catch { /* Tabelle gerade erst angelegt */ }
+}
+
+/**
+ * Generierungen laufen seit 2026-08-17 serverseitig als Job weiter, auch wenn
+ * der Browser weggeht (Fach gewechselt, Tab zu, Netz weg) — dafür braucht die
+ * Projektzeile einen Zustand. `status`: pending → ready | error. Solange
+ * pending, steht in `content` der Auftrag (Prompt/Quellen/Config), damit ein
+ * fehlgeschlagener Job ohne erneutes Tippen wiederholt werden kann.
+ * Ausserdem kommt der Typ 'tabelle' dazu (CHECK lässt sich nicht altern →
+ * Tabelle neu bauen; Reihenfolge create→copy→drop→rename, damit SQLite die
+ * Fremdschlüssel von `cards` nicht wie 2026-07 umbiegt).
+ */
+function migrateProjectStatus(d: DatabaseSync) {
+  try { d.exec("ALTER TABLE projects ADD COLUMN status TEXT NOT NULL DEFAULT 'ready'") } catch { /* existiert */ }
+  try { d.exec('ALTER TABLE projects ADD COLUMN error TEXT') } catch { /* existiert */ }
+  const row = d.prepare(`SELECT sql FROM sqlite_master WHERE type='table' AND name='projects'`).get() as { sql: string } | undefined
+  if (!row || row.sql.includes('tabelle')) return
+  d.exec('PRAGMA foreign_keys = OFF')
+  d.exec('BEGIN')
+  try {
+    d.exec(`
+      CREATE TABLE projects_new (
+        id         TEXT PRIMARY KEY,
+        user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        subject    TEXT NOT NULL,
+        type       TEXT NOT NULL CHECK (type IN ('lernkarten','zusammenfassung','quiz','mindmap','lernplan','podcast','tabelle')),
+        name       TEXT NOT NULL,
+        content    TEXT NOT NULL,
+        pinned     INTEGER NOT NULL DEFAULT 0,
+        folder_id  TEXT,
+        status     TEXT NOT NULL DEFAULT 'ready',
+        error      TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )
+    `)
+    d.exec(`
+      INSERT INTO projects_new (id, user_id, subject, type, name, content, pinned, folder_id, status, error, created_at)
+      SELECT id, user_id, subject, type, name, content, pinned, folder_id, status, error, created_at FROM projects
+    `)
+    d.exec('DROP TABLE projects')
+    d.exec('ALTER TABLE projects_new RENAME TO projects')
+    d.exec('CREATE INDEX IF NOT EXISTS idx_projects_user ON projects(user_id, subject)')
+    d.exec('COMMIT')
+  } catch (e) {
+    d.exec('ROLLBACK')
+    throw e
+  } finally {
+    d.exec('PRAGMA foreign_keys = ON')
+  }
 }
 
 /**
@@ -270,6 +341,15 @@ export function bumpUsage(userId: string, kind: string): number {
              ON CONFLICT(user_id, day, kind) DO UPDATE SET count = count + 1`).run(userId, today(), kind)
   const row = d.prepare('SELECT count FROM usage WHERE user_id = ? AND day = ? AND kind = ?').get(userId, today(), kind) as { count: number }
   return row.count
+}
+
+/**
+ * Gegenbuchung, wenn eine Generierung serverseitig scheitert — sonst kostet ein
+ * n8n-Ausfall Free-Nutzer ihre einzige Tagesgenerierung für dieses Werkzeug.
+ */
+export function refundUsage(userId: string, kind: string) {
+  db().prepare(`UPDATE usage SET count = MAX(count - 1, 0) WHERE user_id = ? AND day = ? AND kind = ?`)
+    .run(userId, today(), kind)
 }
 
 export function getUsage(userId: string, kind: string): number {

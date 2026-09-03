@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { readUpload } from './uploads'
 
 // Fachinhalte sind Markdown-Dateien: data/subjects/<Fach>/<Jahr|Kategorie>/<thema>.md
 // Slug-Format überall: "Fach/Jahr/thema" (ohne .md). Von Hand geschrieben und
@@ -84,7 +85,9 @@ export function listSections(slug: string): string[] {
  * Der Kopf der Datei (Titel, Fach, Klasse) bleibt immer dabei, sonst verliert
  * ein einzelner Abschnitt seinen Zusammenhang.
  */
-export function readTopic(slug: string): { title: string; content: string; bytes: number } | null {
+export function readTopic(slug: string, userId?: string): { title: string; content: string; bytes: number } | null {
+  // Eigene Datei statt Curriculum-Thema: "upload:<id>", an den Nutzer verankert.
+  if (slug.startsWith('upload:')) return userId ? readUpload(userId, slug.slice('upload:'.length)) : null
   const { file: rel, sections } = parseSlug(slug)
   const file = resolve(rel)
   if (!file) return null

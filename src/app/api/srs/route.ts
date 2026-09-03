@@ -3,10 +3,22 @@ import { currentUser } from '@/lib/auth'
 import { db, touchStreak } from '@/lib/db'
 import { nextDue } from '@/lib/srs'
 
-/** Fällige Karten (Leitner-Queue). */
-export async function GET() {
+/** Fällige Karten (Leitner-Queue) — oder mit ?project= alle Karten eines Decks. */
+export async function GET(req: NextRequest) {
   const user = await currentUser()
   if (!user) return NextResponse.json({ error: 'Nicht angemeldet' }, { status: 401 })
+
+  // Deck-Ansicht: Karten mit ihrer Leitner-Box, damit sich das Deck nach
+  // „kann ich" / „kann ich nicht" sortieren und filtern lässt.
+  const projectId = req.nextUrl.searchParams.get('project')
+  if (projectId) {
+    const cards = db().prepare(`
+      SELECT id, front, back, box, reps, lapses, due_at
+      FROM cards WHERE user_id = ? AND project_id = ? ORDER BY id
+    `).all(user.id, projectId)
+    return NextResponse.json({ cards })
+  }
+
   const due = db().prepare(`
     SELECT c.id, c.front, c.back, c.box, p.subject, p.name AS deck
     FROM cards c JOIN projects p ON p.id = c.project_id

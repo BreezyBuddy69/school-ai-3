@@ -67,13 +67,18 @@ async function main() {
   await page.waitForTimeout(2500)
   check('Chat-Nachricht bekommt eine Antwort', await page.locator('.msg.assistant').count() > 0)
 
-  for (const [tool, label] of [['lernkarten', 'Lernkarten'], ['quiz', 'Quiz'], ['mindmap', 'Mindmap']]) {
+  // Generierungen laufen als Hintergrund-Job: erst erscheint die Platzhalter-
+  // Karte, dann (per Abfrage) das Ergebnis. Beides wird hier geprüft.
+  for (const [tool, label] of [['lernkarten', 'Lernkarten'], ['quiz', 'Quiz'], ['mindmap', 'Mindmap'], ['tabelle', 'Tabelle']]) {
     await page.locator(`aside >> text=${label}`).first().click()
     await page.waitForTimeout(300)
     await page.locator('.card input.field, [role="dialog"] input.field').first().fill('Test').catch(() => {})
-    await page.locator('button:has-text("Erstellen")').first().click()
-    await page.waitForTimeout(2200)
-    check(`Studio-Tool "${label}" generiert ein Ergebnis`, await page.locator('.card, [role="dialog"]').count() > 0)
+    await page.locator(`button:has-text("${label} erstellen"), button:has-text("Erstellen")`).last().click()
+    await page.waitForTimeout(400)
+    check(`Studio-Tool "${label}" zeigt sofort eine Platzhalter-Karte`, await page.locator('.shimmer').count() > 0)
+    const ok = await page.waitForFunction(() => document.querySelectorAll('.shimmer').length === 0, null, { timeout: 20000 })
+      .then(() => true).catch(() => false)
+    check(`Studio-Tool "${label}" wird fertig`, ok)
     await page.keyboard.press('Escape').catch(() => {})
     await page.waitForTimeout(200)
   }

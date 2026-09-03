@@ -1,9 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Download, Printer } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
-import { downloadWordExport } from '@/lib/utils'
+import { ExportBar } from '@/components/studio/ExportBar'
 import { escapeHtml, printAsPdf } from '@/lib/print'
 
 // Zwei Modi: Üben (sofortiges Feedback) und Prüfungssimulation (Timer,
@@ -16,8 +15,8 @@ function lgNote(score: number, max: number): string {
   return note.toLocaleString('de-CH', { minimumFractionDigits: 1 })
 }
 
-export function QuizModal({ projectId, name, questions, tier, onClose }: {
-  projectId: string; name: string; questions: QuizQuestion[]; tier: 'free' | 'pro' | 'premium'; onClose: () => void
+export function QuizModal({ projectId, name, questions, onClose }: {
+  projectId: string; name: string; questions: QuizQuestion[]; onClose: () => void
 }) {
   const [mode, setMode] = useState<'pick' | 'ueben' | 'pruefung'>('pick')
   const [index, setIndex] = useState(0)
@@ -26,14 +25,6 @@ export function QuizModal({ projectId, name, questions, tier, onClose }: {
   const [score, setScore] = useState(0)
   const [done, setDone] = useState(false)
   const [secondsLeft, setSecondsLeft] = useState(0)
-  const [downloading, setDownloading] = useState(false)
-  const canWord = tier === 'pro' || tier === 'premium'
-
-  async function downloadWord() {
-    setDownloading(true)
-    await downloadWordExport(projectId, name)
-    setDownloading(false)
-  }
 
   const isExam = mode === 'pruefung'
   const q = questions[index]
@@ -88,16 +79,7 @@ export function QuizModal({ projectId, name, questions, tier, onClose }: {
   if (mode === 'pick') {
     return (
       <Modal title={name} onClose={onClose}
-        footer={
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-            <button className="btn btn-quiet btn-sm" onClick={printPdf}><Printer size={14} /> PDF</button>
-            {canWord && (
-              <button className="btn btn-quiet btn-sm" onClick={downloadWord} disabled={downloading}>
-                <Download size={14} /> {downloading ? 'Erstellt…' : 'Word'}
-              </button>
-            )}
-          </div>
-        }
+        footer={<ExportBar projectId={projectId} filename={name} onPrint={printPdf} />}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <button className="card" onClick={() => start('ueben')} style={{ padding: '16px 18px', cursor: 'pointer', font: 'inherit', textAlign: 'left' }}>
@@ -152,7 +134,7 @@ export function QuizModal({ projectId, name, questions, tier, onClose }: {
   }
 
   return (
-    <Modal title={name} onClose={onClose} wide
+    <Modal title={name} onClose={onClose} wide focusable
       footer={
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <span className="t-caption">Frage {index + 1} / {questions.length}</span>

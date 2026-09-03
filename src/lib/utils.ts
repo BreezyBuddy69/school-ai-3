@@ -22,10 +22,11 @@ export function subjectGlyph(subject: string): string {
   return SUBJECT_GLYPHS[subject] ?? subject.slice(0, 2)
 }
 
-/** Word-Export herunterladen (/api/export/word) — geteilt von Zusammenfassung-, Karteikarten- und Quiz-Ansicht. */
-export async function downloadWordExport(projectId: string, filename: string): Promise<boolean> {
+/** Datei-Export herunterladen — geteilt von allen Studio-Ansichten. */
+export async function downloadExport(projectId: string, filename: string, format: 'word' | 'excel'): Promise<boolean> {
+  const ext = format === 'word' ? 'docx' : 'xlsx'
   try {
-    const res = await fetch(api('/api/export/word'), {
+    const res = await fetch(api(`/api/export/${format}`), {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ projectId }),
     })
@@ -34,7 +35,7 @@ export async function downloadWordExport(projectId: string, filename: string): P
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `${filename}.docx`
+    a.download = `${filename}.${ext}`
     a.click()
     URL.revokeObjectURL(url)
     return true
@@ -42,6 +43,8 @@ export async function downloadWordExport(projectId: string, filename: string): P
     return false
   }
 }
+
+export const downloadWordExport = (projectId: string, filename: string) => downloadExport(projectId, filename, 'word')
 
 export function timeAgo(iso: string): string {
   const s = (Date.now() - new Date(iso + (iso.endsWith('Z') ? '' : 'Z')).getTime()) / 1000

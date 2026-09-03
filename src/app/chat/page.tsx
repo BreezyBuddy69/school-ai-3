@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Menu, PanelRight, Share2 } from 'lucide-react'
 import { useAppStore, refreshProfile } from '@/lib/store'
@@ -15,7 +15,8 @@ import { StudioPanel, TOOLS, type Project, type ToolId } from '@/components/stud
 import { FlashcardsModal, ReviewModal, type DueCard } from '@/components/studio/FlashcardsModal'
 import { QuizModal, type QuizQuestion } from '@/components/studio/QuizModal'
 import { MindmapModal, type MindmapNode } from '@/components/studio/MindmapModal'
-import { SummaryConfigModal, SummaryViewModal, type SummaryConfigState } from '@/components/studio/SummarySheet'
+import { SummaryConfigModal, SummaryViewModal } from '@/components/studio/SummarySheet'
+import { PodcastConfigModal, TableConfigModal } from '@/components/studio/StudioConfigModals'
 import { PodcastModal } from '@/components/studio/PodcastModal'
 import { SettingsSheet } from '@/components/SettingsSheet'
 import { Modal } from '@/components/ui/Modal'
@@ -138,17 +139,23 @@ export default function ChatPage() {
   }, [chats])
 
   async function confirmPicker(slugs: string[]) {
-    if (!subject) return
+    // Globale Themensuche (kein Fach vorgewählt) leitet das Fach aus dem
+    // ersten Treffer ab — Slug-Format ist immer "Fach/Jahr/thema"; der
+    // Kontext selbst liest sich unabhängig vom Fach-State (readTopic() parst
+    // ihn aus dem Slug), nur Sidebar/Studio/n8n-Persona brauchen ein Fach.
+    const effectiveSubject = subject ?? slugs[0]?.split('/')[0]
+    if (!effectiveSubject) return
     setActiveSources(slugs)
     const res = await fetch(api('/api/chats'), {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subject, sources: slugs }),
+      body: JSON.stringify({ subject: effectiveSubject, sources: slugs }),
     })
     const { id } = await res.json()
     stream.reset()
     stream.setChatId(id)
+    if (!subject) { setSubject(effectiveSubject); refreshProjects(effectiveSubject) }
     setView('chat')
-    refreshChats(subject)
+    refreshChats(effectiveSubject)
   }
 
   async function openChat(id: string) {
@@ -181,9 +188,10 @@ export default function ChatPage() {
   // öffnet sich das Konfig-Modal. Alle anderen Werkzeuge generieren direkt,
   // das "Ja, erstellen" auf der Karte ist die einzige nötige Bestätigung.
   const onActionAccept = useCallback((tool: ToolId, topic: string, auto: boolean, original: string) => {
-    if (tool === 'zusammenfassung' && !auto) {
+    // Werkzeuge mit Konfigurator öffnen ihn, statt mit Standardwerten zu starten.
+    if (['zusammenfassung', 'podcast', 'tabelle'].includes(tool) && !auto) {
       setSummaryTopic(topic)
-      setToolPrompt('zusammenfassung')
+      setToolPrompt(tool)
       return
     }
     const cleanTopic = topic || subject || 'ausgewählte Themen'
@@ -216,11 +224,23 @@ export default function ChatPage() {
   }
 
   // ── Studio ─────────────────────────────────────────────────────────────────
-  // Schliesst das Konfig-Modal sofort (statt blockierend offen zu bleiben) und
-  // zeigt den Fortschritt stattdessen als Platzhalter-Karte rechts im Studio
-  // (rotierender Ring) — bei chatFeedback zusätzlich als Plan-Blase im Chat.
+  // Der Server nimmt den Auftrag nur an und arbeitet ihn im Hintergrund ab
+  // (lib/studio-job.ts). Hier landet sofort eine Karte im Zustand „wird
+  // erstellt"; das Ergebnis holt die Abfrage-Schleife weiter unten. Damit
+  // überlebt jede Generierung Fachwechsel, Tabwechsel und Netzaussetzer.
+
+  /** IDs, deren Ergebnis diese Sitzung angestossen hat — nur die öffnen sich von selbst. */
+  const autoOpen = useRef<Set<string>>(new Set())
+
+  const finishPlan = useCallback((planId: string, status: 'done' | 'err') => {
+    stream.setItems((prev) => prev.map((it) => (it.kind === 'plan' && it.id === planId
+      ? { ...it, steps: it.steps.map((s) => ({ ...s, status })) }
+      : it)))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stream.setItems])
+
   async function generateTool(
-    tool: ToolId, prompt: string, config?: SummaryConfigState,
+    tool: ToolId, prompt: string, config?: unknown,
     opts?: { chatFeedback?: boolean; label?: string },
   ) {
     if (!subject) return
@@ -230,39 +250,61 @@ export default function ChatPage() {
 
     const title = TOOL_TITLE[tool]
     const label = (opts?.label ?? prompt).slice(0, 60)
-    const tempId = `pending-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
-    setProjects((prev) => [
-      { id: tempId, subject, type: tool, name: `${title}: ${label}`, content: '', pinned: 0, created_at: new Date().toISOString(), pending: true },
-      ...prev,
-    ])
-    const planId = tempId
-    if (opts?.chatFeedback) {
-      stream.setItems((prev) => [...prev, { kind: 'plan', id: planId, steps: [{ id: 's1', label: `Erstelle ${title} zu „${label}"…`, status: 'active' }] }])
-    }
-    const finishPlan = (status: 'done' | 'err') => {
-      if (!opts?.chatFeedback) return
-      stream.setItems((prev) => prev.map((it) => (it.kind === 'plan' && it.id === planId
-        ? { ...it, steps: it.steps.map((s) => ({ ...s, status })) }
-        : it)))
-    }
-
     try {
       const res = await fetch(api(`/api/studio/${tool}`), {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ subject, prompt, sources: activeSources, config }),
       })
       const data = await res.json()
-      setProjects((prev) => prev.filter((p) => p.id !== tempId))
-      if (!res.ok) { finishPlan('err'); alert(data.error ?? 'Fehler'); return }
-      finishPlan('done')
-      refreshProjects(subject)
-      refreshDue()
-      setViewer(data as Project)
+      if (!res.ok) { alert(data.error ?? 'Fehler'); return }
+
+      setProjects((prev) => [
+        { ...(data as Project), content: '', pinned: 0, created_at: new Date().toISOString(), status: 'pending' },
+        ...prev,
+      ])
+      autoOpen.current.add(data.id)
+      if (opts?.chatFeedback) {
+        stream.setItems((prev) => [...prev, { kind: 'plan', id: data.id, steps: [{ id: 's1', label: `Erstelle ${title} zu „${label}"…`, status: 'active' }] }])
+      }
     } catch {
-      setProjects((prev) => prev.filter((p) => p.id !== tempId))
-      finishPlan('err')
+      alert('Der Auftrag kam nicht an — prüf kurz deine Verbindung.')
     } finally {
       setToolBusy(false)
+    }
+  }
+
+  // Abfrage-Schleife: fragt laufende Generierungen alle 2,5 s ab. Sie läuft nur,
+  // solange wirklich etwas läuft, und stellt sich nach einem Neuladen von selbst
+  // wieder her (der Zustand steht in der Datenbank, nicht im Browser).
+  const pendingIds = projects.filter((p) => p.status === 'pending').map((p) => p.id).join(',')
+  useEffect(() => {
+    if (!pendingIds) return
+    const ids = pendingIds.split(',')
+    const tick = async () => {
+      for (const id of ids) {
+        const res = await fetch(api(`/api/projects/${id}`)).catch(() => null)
+        if (!res?.ok) continue
+        const p = await res.json() as Project
+        if (p.status === 'pending') continue
+        setProjects((prev) => prev.map((x) => (x.id === id ? p : x)))
+        finishPlan(id, p.status === 'ready' ? 'done' : 'err')
+        if (p.status === 'ready') {
+          refreshDue()
+          // Nur öffnen, wenn nichts anderes offen ist — wer inzwischen weiterlernt,
+          // soll nicht von einem aufspringenden Fenster unterbrochen werden.
+          if (autoOpen.current.delete(id)) setViewer((v) => v ?? p)
+        }
+      }
+    }
+    const timer = setInterval(tick, 2500)
+    return () => clearInterval(timer)
+  }, [pendingIds, finishPlan])
+
+  async function retryProject(p: Project) {
+    setProjects((prev) => prev.map((x) => (x.id === p.id ? { ...x, status: 'pending', error: null } : x)))
+    const res = await fetch(api(`/api/projects/${p.id}`), { method: 'POST' }).catch(() => null)
+    if (!res?.ok) {
+      setProjects((prev) => prev.map((x) => (x.id === p.id ? { ...x, status: 'error', error: 'Wiederholen ging nicht' } : x)))
     }
   }
 
@@ -307,20 +349,20 @@ export default function ChatPage() {
     | { kind: 'questions'; questions: QuizQuestion[] }
     | { kind: 'tree'; tree: MindmapNode }
     | { kind: 'markdown'; markdown: string }
-    | { kind: 'podcast'; script: string; audioUrl: string | null }
+    | { kind: 'podcast'; script: string; audioUrl: string | null; durationSec: number | null }
   const viewerContent = useMemo((): ViewerContent | null => {
-    if (!viewer) return null
+    if (!viewer || viewer.status === 'pending' || viewer.status === 'error') return null
     try {
       if (viewer.type === 'lernkarten') return { kind: 'cards', cards: JSON.parse(viewer.content) }
       if (viewer.type === 'quiz') return { kind: 'questions', questions: JSON.parse(viewer.content) }
       if (viewer.type === 'mindmap') return { kind: 'tree', tree: JSON.parse(viewer.content) }
-      if (viewer.type === 'zusammenfassung') {
+      if (viewer.type === 'zusammenfassung' || viewer.type === 'tabelle') {
         try { const p = JSON.parse(viewer.content); return { kind: 'markdown', markdown: String(p.markdown ?? viewer.content) } }
         catch { return { kind: 'markdown', markdown: viewer.content } }
       }
       if (viewer.type === 'podcast') {
-        const p = JSON.parse(viewer.content) as { script: string; audioPath: string | null }
-        return { kind: 'podcast', script: p.script, audioUrl: p.audioPath ? api(`/api/audio/${viewer.id}`) : null }
+        const p = JSON.parse(viewer.content) as { script: string; audioPath: string | null; durationSec?: number | null }
+        return { kind: 'podcast', script: p.script, audioUrl: p.audioPath ? api(`/api/audio/${viewer.id}`) : null, durationSec: p.durationSec ?? null }
       }
     } catch { return null }
     return null
@@ -361,11 +403,11 @@ export default function ChatPage() {
 
         <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
           <div style={{ width: '100%', maxWidth: 760, margin: '0 auto', padding: '0 4px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-            {view === 'picker' && subject && (
+            {view === 'picker' && (
               <TopicPicker
                 subject={subject} topics={topics} initial={activeSources} previous={previousSources}
                 onConfirm={confirmPicker}
-                onCancel={chats.length > 0 ? () => setView('home') : undefined}
+                onCancel={(!subject || chats.length > 0) ? () => setView('home') : undefined}
               />
             )}
 
@@ -413,14 +455,17 @@ export default function ChatPage() {
                       <h1 className="sr-only">{greeting} 👋</h1>
                       <ParticleTitle lines={[`${greeting} 👋`]} height="clamp(90px, 16vw, 150px)" />
                       <p className="t-lead" style={{ maxWidth: 460 }}>
-                        {chats.length === 0 ? 'Womit fangen wir an? Wähl dein Fach — danach suchst du die Themen aus, die die KI kennen soll.' : 'Wähl dein Fach und leg los.'}
+                        {chats.length === 0 ? 'Womit fangen wir an? Suche direkt ein Thema oder Lernziel — oder wähl dein Fach.' : 'Wähl dein Fach und leg los.'}
                         {dueCards.length > 0 ? ` Übrigens: ${dueCards.length} Lernkarten sind heute fällig.` : ''}
                       </p>
-                      {dueCards.length > 0 && (
-                        <button className="btn btn-primary" onClick={() => setReviewOpen(true)}>
-                          Jetzt wiederholen
-                        </button>
-                      )}
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+                        <button className="btn btn-primary" onClick={() => setView('picker')}>Thema oder Lernziel suchen</button>
+                        {dueCards.length > 0 && (
+                          <button className="btn btn-quiet" onClick={() => setReviewOpen(true)}>
+                            {dueCards.length} Karten wiederholen
+                          </button>
+                        )}
+                      </div>
                     </div>
                     {/* Fach-Grid im Hauptbereich — funktioniert auch mobil, wo die Sidebar zu ist */}
                     <div data-tour="subject-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 10 }}>
@@ -476,10 +521,9 @@ export default function ChatPage() {
           <StudioPanel
             projects={projects} dueCards={dueCards.length} tier={profile?.tier ?? 'free'}
             onLaunch={(t) => {
-              // Zusammenfassung braucht kein Getippe, wenn schon Themen
-              // gewählt sind — das Feld ist damit vorbefüllt, aber weiter
-              // editierbar (das Modal öffnet direkt startbereit).
-              if (t === 'zusammenfassung' && !summaryTopic) {
+              // Die Werkzeuge mit Konfigurator brauchen kein Getippe, wenn schon
+              // Themen gewählt sind — das Feld ist vorbefüllt, aber editierbar.
+              if (['zusammenfassung', 'podcast', 'tabelle'].includes(t) && !summaryTopic) {
                 const labels = topics.filter((x) => activeSources.includes(x.slug)).map((x) => x.label)
                 setSummaryTopic(labels.length ? labels.join(' & ') : subject ?? '')
               }
@@ -490,6 +534,7 @@ export default function ChatPage() {
             onReview={() => setReviewOpen(true)}
             onTogglePin={togglePin}
             onDeleteProject={deleteProject}
+            onRetryProject={retryProject}
             onRenameProject={renameProject}
             onMoveProject={moveProject}
             onRenameFolder={renameFolder}
@@ -505,26 +550,36 @@ export default function ChatPage() {
         <SummaryConfigModal topic={summaryTopic} busy={toolBusy} onClose={() => { setToolPrompt(null); setSummaryTopic('') }}
           onGenerate={(p, cfg) => generateTool('zusammenfassung', p, cfg)} />
       )}
-      {toolPrompt && toolPrompt !== 'zusammenfassung' && (
+      {toolPrompt === 'podcast' && (
+        <PodcastConfigModal topic={summaryTopic} busy={toolBusy} hasContext={activeSources.length > 0}
+          onClose={() => { setToolPrompt(null); setSummaryTopic('') }}
+          onGenerate={(p, cfg) => generateTool('podcast', p || subject || 'ausgewählte Themen', cfg)} />
+      )}
+      {toolPrompt === 'tabelle' && (
+        <TableConfigModal topic={summaryTopic} busy={toolBusy} hasContext={activeSources.length > 0}
+          onClose={() => { setToolPrompt(null); setSummaryTopic('') }}
+          onGenerate={(p, cfg) => generateTool('tabelle', p || subject || 'ausgewählte Themen', cfg)} />
+      )}
+      {toolPrompt && !['zusammenfassung', 'podcast', 'tabelle'].includes(toolPrompt) && (
         <ToolPromptModal tool={toolPrompt} busy={toolBusy} hasContext={activeSources.length > 0} onClose={() => setToolPrompt(null)}
           onGenerate={(p) => generateTool(toolPrompt, p || subject || 'ausgewählte Themen')} />
       )}
 
       {viewer && viewerContent?.kind === 'cards' && (
-        <FlashcardsModal projectId={viewer.id} name={viewer.name} cards={viewerContent.cards} tier={profile?.tier ?? 'free'} onClose={() => setViewer(null)} />
+        <FlashcardsModal projectId={viewer.id} name={viewer.name} cards={viewerContent.cards} onClose={() => setViewer(null)} />
       )}
       {viewer && viewerContent?.kind === 'questions' && (
-        <QuizModal projectId={viewer.id} name={viewer.name} questions={viewerContent.questions} tier={profile?.tier ?? 'free'} onClose={() => setViewer(null)} />
+        <QuizModal projectId={viewer.id} name={viewer.name} questions={viewerContent.questions} onClose={() => setViewer(null)} />
       )}
       {viewer && viewerContent?.kind === 'tree' && (
-        <MindmapModal key={viewer.id} name={viewer.name} tree={viewerContent.tree} onClose={() => setViewer(null)} />
+        <MindmapModal key={viewer.id} projectId={viewer.id} name={viewer.name} tree={viewerContent.tree} onClose={() => setViewer(null)} />
       )}
       {viewer && viewerContent?.kind === 'markdown' && (
-        <SummaryViewModal projectId={viewer.id} name={viewer.name} markdown={viewerContent.markdown}
-          tier={profile?.tier ?? 'free'} onClose={() => setViewer(null)} onUpgrade={() => router.push('/pricing')} />
+        <SummaryViewModal projectId={viewer.id} name={viewer.name} markdown={viewerContent.markdown} onClose={() => setViewer(null)} />
       )}
       {viewer && viewerContent?.kind === 'podcast' && (
-        <PodcastModal projectId={viewer.id} name={viewer.name} script={viewerContent.script} audioUrl={viewerContent.audioUrl} onClose={() => setViewer(null)} />
+        <PodcastModal projectId={viewer.id} name={viewer.name} script={viewerContent.script}
+          audioUrl={viewerContent.audioUrl} durationSec={viewerContent.durationSec} onClose={() => setViewer(null)} />
       )}
 
       {reviewOpen && <ReviewModal due={dueCards} onClose={() => setReviewOpen(false)} onFinished={refreshDue} />}
@@ -573,7 +628,9 @@ function ToolPromptModal({ tool, busy, hasContext, onGenerate, onClose }: {
     lernkarten: { title: 'Lernkarten erstellen', placeholder: 'z.B. Photosynthese — Licht- & Dunkelreaktion' },
     quiz: { title: 'Quiz erstellen', placeholder: 'z.B. Der Kalte Krieg 1947–1962' },
     mindmap: { title: 'Mindmap erstellen', placeholder: 'z.B. Die Zelle' },
-    podcast: { title: 'Podcast erstellen', placeholder: 'z.B. Die Französische Revolution' },
+    // Podcast, Tabelle und Zusammenfassung haben eigene Konfiguratoren.
+    podcast: { title: '', placeholder: '' },
+    tabelle: { title: '', placeholder: '' },
     zusammenfassung: { title: '', placeholder: '' },
   }
   // Wenn schon Themen im Chat ausgewählt sind, weiss die KI, worum es geht —
@@ -597,9 +654,7 @@ function ToolPromptModal({ tool, busy, hasContext, onGenerate, onClose }: {
             ? 'Die KI nutzt automatisch die Themen, die du im Chat ausgewählt hast — du musst hier nichts eintragen.'
             : 'Die KI nutzt zusätzlich die Themen, die du im Chat ausgewählt hast.'}
         </p>
-        {tool === 'podcast' && (
-          <p className="t-caption">Skript + Sprachausgabe brauchen echte Zeit — rechne mit rund 2 Minuten.</p>
-        )}
+        <p className="t-caption">Du kannst das Fenster danach zumachen — die Generierung läuft auf dem Server weiter.</p>
       </div>
     </Modal>
   )

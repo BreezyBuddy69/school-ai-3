@@ -9,11 +9,13 @@
     "codes": "node scripts/generate-codes.mjs",
     "scrape": "node scripts/scrape-curriculum.mjs",
     "backup": "node scripts/backup-db.mjs",
-    "smoke-test": "node scripts/smoke-test.mjs"
+    "smoke-test": "node scripts/smoke-test.mjs",
+    "test": "node --experimental-strip-types --no-warnings scripts/test-migration.mjs && node --experimental-strip-types --no-warnings scripts/test-exports.mjs"
   },
   "dependencies": {
     "clsx": "^2.1.1",
     "docx": "^9.5.0",
+    "jszip": "^3.10.1",
     "katex": "^0.16.21",
     "lucide-react": "^1.9.0",
     "motion": "^12.38.0",
@@ -25,6 +27,7 @@
     "remark-gfm": "^4.0.1",
     "remark-math": "^6.0.0",
     "tailwind-merge": "^3.5.0",
+    "unpdf": "^1.8.1",
     "zustand": "^5.0.12"
   },
   "devDependencies": {

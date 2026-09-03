@@ -1,10 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { Download, Printer } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Markdown } from '@/components/Markdown'
-import { downloadWordExport } from '@/lib/utils'
+import { ExportBar } from '@/components/studio/ExportBar'
 import { printAsPdf } from '@/lib/print'
 
 // Das Flaggschiff: Konfigurator (Niveau/Länge/Stil/Extras) VOR der
@@ -34,7 +33,29 @@ const STILE = [
 ] as const
 const EXTRAS = ['Beispielaufgaben mit Lösungen', 'Begriffstabelle', 'Formelsammlung', 'Zeitstrahl', 'Eselsbrücken']
 
-function OptionRow<T extends string>({ options, value, onChange }: {
+/** Mehrfachauswahl als Pillen — geteilt mit dem Podcast-Konfigurator. */
+export function ExtraPills({ options, value, onChange }: {
+  options: readonly string[]
+  value: string[]
+  onChange: (v: string[]) => void
+}) {
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+      {options.map((x) => {
+        const on = value.includes(x)
+        return (
+          <button key={x} onClick={() => onChange(on ? value.filter((v) => v !== x) : [...value, x])}
+            className="btn btn-sm"
+            style={{ background: on ? 'var(--accent)' : 'var(--parchment)', color: on ? '#fff' : 'var(--ink-muted)' }}>
+            {x}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+export function OptionRow<T extends string>({ options, value, onChange }: {
   options: readonly { id: T; label: string; desc: string }[]
   value: T
   onChange: (v: T) => void
@@ -99,61 +120,32 @@ export function SummaryConfigModal({ topic, busy, onGenerate, onClose }: {
         </div>
         <div>
           <label className="fieldlabel">Extras</label>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
-            {EXTRAS.map((x) => {
-              const on = extras.includes(x)
-              return (
-                <button key={x} onClick={() => setExtras((e) => on ? e.filter((v) => v !== x) : [...e, x])}
-                  className="btn btn-sm"
-                  style={{ background: on ? 'var(--accent)' : 'var(--parchment)', color: on ? '#fff' : 'var(--ink-muted)' }}>
-                  {x}
-                </button>
-              )
-            })}
-          </div>
+          <ExtraPills options={EXTRAS} value={extras} onChange={setExtras} />
         </div>
       </div>
     </Modal>
   )
 }
 
-export function SummaryViewModal({ projectId, name, markdown, tier, onClose, onUpgrade }: {
+/** Viewer für Zusammenfassung und Tabelle — beide sind Markdown, beide exportierbar. */
+export function SummaryViewModal({ projectId, name, markdown, onClose }: {
   projectId: string
   name: string
   markdown: string
-  tier: 'free' | 'pro' | 'premium'
   onClose: () => void
-  onUpgrade: () => void
 }) {
-  const [downloading, setDownloading] = useState(false)
-  const canWord = tier === 'pro' || tier === 'premium'
-
-  async function downloadWord() {
-    setDownloading(true)
-    await downloadWordExport(projectId, name.replace(/^Zusammenfassung:\s*/i, ''))
-    setDownloading(false)
-  }
+  const title = name.replace(/^(Zusammenfassung|Tabelle):\s*/i, '')
 
   function printPdf() {
     printAsPdf(name, document.getElementById(`summary-body-${projectId}`)?.innerHTML ?? '')
   }
 
   return (
-    <Modal title={name.replace(/^Zusammenfassung:\s*/i, '')} onClose={onClose} wide
+    <Modal title={title} onClose={onClose} wide focusable
       footer={
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          <span className="t-caption" style={{ flex: 1 }}>
-            {canWord ? 'Als schön formatiertes Word-Dokument speichern.' : 'Word-Export gibt es mit Pro.'}
-          </span>
-          <button className="btn btn-quiet btn-sm" onClick={printPdf}><Printer size={14} /> PDF</button>
-          {canWord ? (
-            <button className="btn btn-primary btn-sm" onClick={downloadWord} disabled={downloading}>
-              <Download size={14} /> {downloading ? 'Erstellt…' : 'Word (.docx)'}
-            </button>
-          ) : (
-            <button className="btn btn-primary btn-sm" onClick={onUpgrade}><Download size={14} /> Pro holen</button>
-          )}
-        </div>
+        <ExportBar projectId={projectId} filename={title} onPrint={printPdf}>
+          <span className="t-caption">Word behält die Formatierung, Excel gibt dir die Tabelle als Zeilen.</span>
+        </ExportBar>
       }
     >
       <div id={`summary-body-${projectId}`}>

@@ -1,6 +1,6 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import { memo, type ReactNode } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
@@ -16,8 +16,14 @@ function escapePipesInMath(md: string): string {
   return md.replace(/\$\$[\s\S]*?\$\$|\$[^\n$]*?\$/g, (span) => span.replace(/\|/g, '\\vert '))
 }
 
-/** KI-Antworten: GFM + LaTeX (KaTeX) + ```chart-Blöcke als SVG-Diagramm. */
-export function Markdown({ children }: { children: string }) {
+/**
+ * KI-Antworten: GFM + LaTeX (KaTeX) + ```chart-Blöcke als SVG-Diagramm.
+ *
+ * memo, weil das Transkript bei jedem Streaming-Schritt neu rendert: ohne das
+ * parst JEDE frühere Antwort im Chat ihr Markdown erneut, nicht nur die
+ * wachsende. In einem längeren Chat war das der teuerste Teil des Ruckelns.
+ */
+export const Markdown = memo(function Markdown({ children }: { children: string }) {
   return (
     <div className="prose-ki">
       <ReactMarkdown
@@ -39,4 +45,4 @@ export function Markdown({ children }: { children: string }) {
       </ReactMarkdown>
     </div>
   )
-}
+})
