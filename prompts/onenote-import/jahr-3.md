@@ -17,7 +17,46 @@ Material existiert.
 - **Wissens-Kurator** — dedupliziert gegen vorhandene `data/subjects/`-Dateien, sauberes Datei-/Slug-Schema, nichts geht verloren.
 - **Qualitätsprüfer** — Vollständigkeits-Check gegen den Lehrplan, vergibt das Beta/Verified-Tag korrekt und ohne Ausnahme.
 
-## Was DU (Jayden) vor dem Start erledigst
+## Update 2026-09-03: kein manueller Export mehr nötig
+
+Der ursprüngliche Plan unten (Jayden exportiert jedes Fach manuell als PDF) ist überholt.
+Getestet und bestätigt an Jahr 4: OneNote-Desktop läuft auf Jaydens Rechner, und Claude Code
+kann per **COM-Automatisierung live** jeden Abschnitt selbst als PDF ziehen und danach inkl.
+Handschrift/Skizzen lesen — kein „Datei → Exportieren" mehr nötig. Vorgehen:
+
+```powershell
+$one = New-Object -ComObject OneNote.Application
+$xml = ""
+$one.GetHierarchy($notebookId, [Microsoft.Office.Interop.OneNote.HierarchyScope]::hsSections, [ref]$xml)
+# $xml als XML parsen -> alle <one:Section>-Elemente (auch verschachtelt in SectionGroups)
+$one.Publish($sectionId, $outPath, [Microsoft.Office.Interop.OneNote.PublishFormat]::pfPDF, "")
+```
+
+**Notizbücher Jahr 3 (Klasse "3E", Schuljahr mit Präfix `LG-22-`):**
+
+| Fach-Code | Notizbuch | ID |
+|---|---|---|
+| GEO (Geografie) | LG-22-3E-GEO-Notizbuch | `{35FE9600-6935-4D57-A71B-F8AD53F2C3A5}{1}{B0}` |
+| MA (Mathematik) | LG-22-3E-MA-Notizbuch | `{8E1FB596-CAEA-44FA-BFD9-A040BFDBF03F}{1}{B0}` |
+| E (Englisch) | LG-22-3E-E-Notizbuch | `{A53A3AB6-5816-45F7-85F9-E7EAD772FBC3}{1}{B0}` |
+| NT (Natur und Technik — vermutlich Biologie/Chemie/Physik kombiniert, in `faecher.json` prüfen und beim Verarbeiten auf die passenden Fach-Ordner aufteilen) | LG-22-3E-NT-Notizbuch | `{EF28118A-BDB8-49A1-8965-329E19AC4D7A}{1}{B0}` |
+| GS (Geschichte) | LG-22-3E-GS-Notizbuch | `{D739606F-E7FF-4248-AB33-C823372128F3}{1}{B0}` |
+| F (Französisch) | LG-22-3E-F-Notizbuch | `{0C051416-16E0-42F9-B59F-BFB7B8392266}{1}{B0}` |
+
+Für Deutsch, Informatik, Statistik, Wirtschaft und Recht, Bewegung und Sport, Kunsterziehung,
+Musikerziehung, Philosophie und Ethik, Religion und Kultur existiert **kein** Jahr-3-Notizbuch
+in Jaydens OneNote-Konto (geprüft — durchgängiges Muster über alle bisherigen Jahre: diese Fächer
+laufen bei ihm offenbar nicht über OneNote). Diese bleiben automatisch 🧪 Beta, ausser Jayden legt
+Material manuell in `data/onenote-inbox/Jahr-3/<Fach>/` ab (Word/PDF/Fotos).
+
+**Empfohlener Ablauf (wie bei Jahr 4 erprobt):** einen Agenten pro Notizbuch parallel im
+Hintergrund starten (Agent-Tool, `run_in_background`), jeder mit obiger Notebook-ID, den Zielen
+aus Schritt 1–4 unten und der `_Inhaltsbibliothek` (readOnly-Vorlage, kurz auf Zusatzstoff
+prüfen) plus persönlicher Section-Group als primärer Quelle. NICHT alle Fächer sequenziell in
+einer Session abarbeiten — das lässt sich parallelisieren und war beim letzten Mal deutlich
+schneller.
+
+## Ursprünglicher Plan (nur falls die OneNote-Notizbücher oben nicht mehr per COM erreichbar sind)
 
 1. Für jedes Fach unten: OneNote-Abschnitt für Jahr 3 als **PDF** exportieren (Datei → Exportieren → PDF, **ganzer Abschnitt**, nicht einzelne Seiten).
 2. Ablegen unter: `data/onenote-inbox/Jahr-3/<Fach>.pdf` — `<Fach>` exakt wie in der Fächerliste unten.
