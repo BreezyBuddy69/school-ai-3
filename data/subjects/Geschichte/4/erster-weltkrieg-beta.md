@@ -61,3 +61,7 @@ Ab dem 18. Januar 1919 verhandelten die Siegermächte (v. a. Frankreich, Grossbr
 > Achtung Prüfung: Der Versailler Vertrag wird in Deutschland breit als **"Diktatfrieden"** empfunden (v. a. wegen des Kriegsschuldartikels und der hohen Reparationen) — dieses Gefühl der nationalen Demütigung ist eine wichtige Ursache für die politische Instabilität der Weimarer Republik und den Aufstieg des Nationalsozialismus (vertieft in Stufe 6).
 
 > Merke: Ablauf zum Merken — Attentat Sarajevo (1914) → Stellungskrieg → Epochenjahr 1917 (US-Kriegseintritt, russische Revolution) → Zusammenbruch der Mittelmächte (1918) → Pariser Friedenskonferenzen → Versailler Vertrag (1919).
+
+---
+
+*Verifiziert 2026-09-03: Live-Abgleich mit deinem OneNote-Notizbuch (`LG-24-4Wa-GS-Notizbuch`, per `GetHierarchy`) bestätigt — in deinem persönlichen Bereich ("Mikus Jayden LG") existiert für den 1. Weltkrieg keine eigene Sektion (anders als bei Napoleon, Wiener Kongress, Deutscher Bund, Industrialisierung, wo du jeweils eigene Notizen parallel zur Gliederung geführt hast). Die einzige Quelle bleibt die eine Seite "Folgen" im read-only Lehrer-Ordner `_Inhaltsbibliothek/Gliederung/1. Weltkrieg` (Lehrbuchauszug zu den Pariser Friedenskonferenzen, bereits oben eingearbeitet). Das ist eine echte Lücke in deinen Notizen, kein übersehener Export.*

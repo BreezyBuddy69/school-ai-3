@@ -65,3 +65,7 @@ Die USA betrieben eine eigene Form des Imperialismus, die sich von der europäis
 - Die eigentliche **Entkolonialisierung** (Unabhängigkeit der meisten Kolonien in Afrika und Asien) erfolgte grösstenteils erst nach dem Zweiten Weltkrieg, im Zusammenhang mit dem Kalten Krieg — dieser Teil wird vertieft in einem späteren Schuljahr behandelt.
 
 > Achtung Prüfung: Für die Stufe 4 zentral ist der **Zusammenhang zwischen Imperialismus und Erstem Weltkrieg** (Konkurrenz der Grossmächte um Kolonien/Einfluss als eine der Kriegsursachen) — die Entkolonialisierung selbst ist eher Ausblick als Prüfungsschwerpunkt dieses Jahres.
+
+---
+
+*Verifiziert 2026-09-03: Live-Abgleich mit deinem OneNote-Notizbuch (`LG-24-4Wa-GS-Notizbuch`, per `GetHierarchy`) bestätigt — die Seiten "Imperialismus" (Russland/Balkan, USA, Japan) und "Lernziele für die SA (14.05.2025)" (Begriffe, Seitenangaben *Schweizer Geschichtsbuch 2*, Kap. 7) aus der Sektion `Mikus Jayden LG/Nationalstaatenbildung/Neuer Abschnitt 1` sind bereits vollständig oben eingearbeitet. Die dritte Seite dieser Sektion ("Seite ohne Titel", 21.5.2025, per `GetPageContent` geprüft) ist tatsächlich leer — keine übersehenen Notizen.*

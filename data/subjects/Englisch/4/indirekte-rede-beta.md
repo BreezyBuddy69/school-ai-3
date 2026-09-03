@@ -40,3 +40,18 @@ Wenn das einleitende Verb in der Vergangenheit steht (*said, told*), verschiebt 
 > Merke: Kein Backshift nötig, wenn die Aussage **weiterhin gültig/allgemeingültig** ist (z. B. *"The earth is round," he said* → He said the earth **is** round — kann bleiben).
 
 > Achtung Prüfung: Modalverben ohne Vergangenheitsform (*must, should, might, could, would*) bleiben in der indirekten Rede meist **unverändert** — nur *must* (Pflicht) wird oft zu *had to*.
+
+## 5. Weitere redeeinleitende Verben (Reporting Verbs)
+
+Statt immer nur *said/told/asked* zu verwenden, gibt es präzisere **Reporting Verbs** — jedes mit einer festen Satzstruktur.
+
+| Struktur | Verben (Beispiele) | Beispiel |
+|---|---|---|
+| **Verb + Gerundium (-ing)** | admit, deny, suggest, propose, mention, recommend | *"I took the money,"* he said. → He **admitted taking** the money. |
+| **Verb + Objekt + to-Infinitiv** | advise, ask, beg, convince, encourage, forbid, instruct, invite, order, persuade, remind, tell, urge, warn | *"Don't ignore the symptoms,"* said the doctor. → The doctor **warned me not to ignore** the symptoms. |
+| **Verb + that-Satz** | suggest, admit, deny, insist, claim, explain | *"I didn't break it,"* she said. → She **denied that** she had broken it. |
+
+> Merke: **suggest** steht **nie** mit Objekt + to-Infinitiv (kein *"suggest me to go"*!) — entweder **suggest + Gerundium** (*suggested going*) oder **suggest + that-Satz** (*suggested that we go/should go*).
+> Merke: **warn** kann auch mit *against* + Gerundium stehen: *warned me not to eat too much* = *warned me against eating too much*.
+
+> Achtung Prüfung: **advise** und **warn** stehen bei verneinten Anweisungen mit **not to** + Infinitiv, nicht mit *don't*: *She advised him **not to** spend all his money.*
