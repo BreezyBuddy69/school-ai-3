@@ -1,6 +1,8 @@
-> 🧪 **Beta** — nicht in deinen OneNote-Notizen/Zusammenfassungen von Jahr 3 gefunden. Aus dem offiziellen LG-Lehrplan + ergänzender Recherche erstellt. Ersetzen/ergänzen, sobald echte Notizen vorliegen.
+> ✅ Aus deinen echten OneNote-Notizen (Jahr 3) übernommen und aufbereitet.
 
 # Potenzgesetze — Grundlagen
+
+Aus deiner eigenen Hausübung (zusammen mit der Näherung von $\sqrt{13}$ behandelt) — Rechenregeln für Potenzen, dort mit eigenen Beispielen durchgerechnet.
 
 ## Grundbegriff
 Eine Potenz $a^n$ besteht aus **Basis** $a$ und **Exponent** $n$:
@@ -63,6 +65,9 @@ Vorgehen: zuerst Klammern auflösen (Potenz einer Potenz), dann gleiche Basen zu
 ```
 2a³ · 3a⁻⁵ = 6a^(3-5) = 6a⁻² = 6/a²
 ```
+
+## Verwandtes Thema: Zehnerpotenzen (wissenschaftliche Schreibweise)
+Im selben Zeitraum wurde auch das Kapitel **"16 Zehn hoch"** behandelt (Rechnen mit Zehnerpotenzen, positive und negative Exponenten, wissenschaftliche Schreibweise sehr grosser/kleiner Zahlen) — es folgt exakt denselben Potenzgesetzen wie oben, nur mit Basis $10$.
 
 ## Zusammenfassung
 $$\boxed{a^m\cdot a^n = a^{m+n} \qquad a^m:a^n = a^{m-n} \qquad (a^m)^n = a^{m\cdot n} \qquad a^0=1 \qquad a^{-n}=\frac{1}{a^n}}$$

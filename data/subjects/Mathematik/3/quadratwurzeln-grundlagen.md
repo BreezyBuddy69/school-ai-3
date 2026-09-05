@@ -1,6 +1,8 @@
-> 🧪 **Beta** — nicht in deinen OneNote-Notizen/Zusammenfassungen von Jahr 3 gefunden. Aus dem offiziellen LG-Lehrplan + ergänzender Recherche erstellt. Ersetzen/ergänzen, sobald echte Notizen vorliegen.
+> ✅ Aus deinen echten OneNote-Notizen (Jahr 3) übernommen und aufbereitet.
 
 # Quadratwurzeln — Grundlagen
+
+Behandelt im Kapitel **"13 Quadratwurzel"** — eigene Hausübung dazu enthält u. a. die Näherung von $\sqrt{13}$ mit dem **Heron-Verfahren**.
 
 ## Definition
 Die Quadratwurzel $\sqrt{a}$ ist diejenige **nicht-negative** Zahl, die mit sich selbst multipliziert $a$ ergibt:
@@ -18,13 +20,21 @@ $$\sqrt{a} = b \iff b^2 = a \quad \text{und} \quad b \geq 0 \qquad (a \geq 0)$$
 ## Rationale und irrationale Zahlen
 Nicht jede Quadratwurzel ergibt eine "glatte" Zahl:
 - $\sqrt{16} = 4$ → **rational** (Quadratzahl)
-- $\sqrt{2} = 1{,}41421356\ldots$ → **irrational** (unendlicher, nicht periodischer Dezimalbruch)
+- $\sqrt{13}, \sqrt{2}, \ldots$ → **irrational** (unendlicher, nicht periodischer Dezimalbruch)
 
-## Spirale des Theodorus (Wurzelschnecke)
+## Näherungsweise berechnen: das Heron-Verfahren
+Für Wurzeln, die keine ganze Zahl ergeben (z. B. $\sqrt{13}$), lässt sich der Wert **iterativ annähern**, indem man abwechselnd dividiert und mittelt:
 
-![Spirale des Theodorus: rechtwinklige Dreiecke zeigen geometrisch die Längen √2, √3, √4, ... als Hypotenusen aufeinanderfolgender Dreiecke](https://upload.wikimedia.org/wikipedia/commons/9/9f/Spiral_of_Theodorus.svg)
+$$x_{n+1} = \frac{1}{2}\left(x_n + \frac{a}{x_n}\right)$$
 
-Diese Konstruktion macht sichtbar, dass Wurzeln reale, konstruierbare **Streckenlängen** sind: Jedes rechtwinklige Dreieck hat Katheten der Länge 1 und $\sqrt{n}$, die Hypotenuse ist dann $\sqrt{n+1}$ (nach Pythagoras). So entstehen nacheinander $\sqrt{2}, \sqrt{3}, \sqrt{4}=2, \sqrt{5}, \ldots$
+**Beispiel $\sqrt{13}$** (Startwert $x_0=4$, da $4^2=16$ nahe bei 13 liegt):
+```
+x₁ = ½(4 + 13/4) = ½(4 + 3,25) = 3,625
+x₂ = ½(3,625 + 13/3,625) ≈ ½(3,625 + 3,586) ≈ 3,606
+```
+Bereits nach 2 Schritten sehr nahe am tatsächlichen Wert $\sqrt{13}\approx3{,}6056$.
+
+> Merke: Das Heron-Verfahren ist ein **Näherungsverfahren** (so rechnet auch ein Taschenrechner intern) — nützlich, um zu verstehen, wie man ohne Wurzeltaste auskommt.
 
 ## Wurzelgesetze
 | Regel | Formel |
@@ -66,4 +76,4 @@ $$\frac{1}{\sqrt{2}} = \frac{1}{\sqrt{2}}\cdot\frac{\sqrt{2}}{\sqrt{2}} = \frac{
 ## Zusammenfassung
 $$\boxed{\sqrt{a}\cdot\sqrt{b}=\sqrt{ab} \qquad \sqrt{a}:\sqrt{b}=\sqrt{a:b} \qquad \left(\sqrt a\right)^2=a \qquad \sqrt a + \sqrt b \neq \sqrt{a+b}}$$
 
-> Merke: Diese Grundlagen brauchst du direkt weiter bei der pq-Formel (Jahr 1), beim Satz des Pythagoras (siehe eigenes Thema) und in Jahr 5 bei den Potenzen mit rationalen Exponenten und den Wurzelfunktionen.
+> Merke: Diese Grundlagen brauchst du direkt weiter beim Satz des Pythagoras (siehe eigenes Thema) und in Jahr 5 bei den Potenzen mit rationalen Exponenten und den Wurzelfunktionen.

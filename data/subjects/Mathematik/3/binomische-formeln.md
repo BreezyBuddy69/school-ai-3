@@ -1,9 +1,8 @@
-> 🧪 **Beta** — nicht in deinen OneNote-Notizen/Zusammenfassungen von Jahr 3 gefunden. Aus dem offiziellen LG-Lehrplan + ergänzender Recherche erstellt. Ersetzen/ergänzen, sobald echte Notizen vorliegen.
+> ✅ Aus deinen echten OneNote-Notizen (Jahr 3) übernommen und aufbereitet.
 
 # Terme: Binomische Formeln & Faktorisieren
 
-## Wozu Terme umformen?
-Bevor du in Jahr 1 quadratische Gleichungen mit der pq-Formel gelöst hast, brauchst du das Werkzeug, um Klammern **auszumultiplizieren** und Terme wieder **zusammenzufassen** (faktorisieren). Das ist die Grundlage für Jahr 5 (Potenzfunktionen, quadratische Funktionen).
+Behandelt im Kapitel **"18 Produkte von Binomen"** — eigene Hausübung ("Übungszettel Binomische Formeln") mit vollständig durchgerechneten Aufgaben und Flächenmodell-Skizzen vorhanden.
 
 ## Die drei binomischen Formeln
 | Nr. | Formel |
@@ -14,7 +13,7 @@ Bevor du in Jahr 1 quadratische Gleichungen mit der pq-Formel gelöst hast, brau
 
 > Merke: Die 3. binomische Formel heisst auch **"Plus mal Minus"** — das Ergebnis hat **kein** gemischtes Glied ($ab$), nur die Differenz der Quadrate.
 
-### Geometrische Veranschaulichung (1. binomische Formel)
+### Geometrische Veranschaulichung (Flächenmodell, wie im Merkheft)
 Ein Quadrat mit Seitenlänge $(a+b)$ lässt sich in vier Teilflächen zerlegen:
 ```
 ┌───────┬───────┐
@@ -51,7 +50,7 @@ x² - 16       = (x + 4)(x - 4)   (3. binomische Formel rückwärts)
 > Achtung Prüfung: Um zu prüfen, ob ein Trinom eine binomische Formel ist, checke zuerst, ob **erstes und letztes Glied** Quadrate sind, und ob das **mittlere Glied** wirklich $2ab$ ergibt.
 
 ## Ausklammern (gemeinsamer Faktor)
-Bevor man auf binomische Formeln prüft, immer zuerst einen gemeinsamen Faktor herausziehen:
+Bevor man auf binomische Formeln prüft, immer zuerst einen gemeinsamen Faktor herausziehen — auch das war Teil deiner Übungszettel ("Ausklammern/Herausheben gemeinsamer Faktoren"):
 ```
 3x² + 12x + 12 = 3(x² + 4x + 4) = 3(x + 2)²
 ```
